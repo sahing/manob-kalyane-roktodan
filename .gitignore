@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+
+prompt
+.vscode
+storage/app
+shongidra-rokkho-dan
+composer.phar
+database/database.sqlite
