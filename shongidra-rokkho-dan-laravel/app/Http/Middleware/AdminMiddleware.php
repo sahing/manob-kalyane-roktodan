@@ -14,8 +14,8 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
-            abort(403, 'Access denied. Administrative privileges required.');
+        if (!Auth::check() || !Auth::user()->canAccessAdmin()) {
+            abort(403, 'Access denied. Administrative or delegated role privileges required.');
         }
 
         return $next($request);

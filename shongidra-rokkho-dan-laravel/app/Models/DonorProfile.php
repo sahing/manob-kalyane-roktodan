@@ -15,6 +15,7 @@ class DonorProfile extends Model
         'donor_code',
         'blood_group',
         'availability_status',
+        'allow_direct_contact',
         'donor_type',
         'donor_badge',
         'last_donation_date',
@@ -26,6 +27,7 @@ class DonorProfile extends Model
 
     protected $casts = [
         'last_donation_date' => 'date',
+        'allow_direct_contact' => 'boolean',
     ];
 
     public function user()

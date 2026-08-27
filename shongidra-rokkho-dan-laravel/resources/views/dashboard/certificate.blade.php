@@ -63,12 +63,22 @@
                 {{ $donation->user->name }}
             </div>
 
-            <p class="text-xs sm:text-sm text-slate-700 max-w-xl mx-auto leading-relaxed pt-3">
-                In heartfelt recognition of your noble voluntary blood donation on <strong class="text-rose-950 font-extrabold">{{ $donation->donation_date ? $donation->donation_date->format('F d, Y') : 'Record' }}</strong> at {{ $donation->location ?? 'Bhagwangola Rural Hospital' }}. Your selfless contribution has saved a human life.
+            <!-- Member Loyalty & Honor Badge Row -->
+            <div class="flex items-center justify-center gap-3 pt-1">
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-900 border border-amber-500/40">
+                    ⭐ Member Loyalty Points: {{ $donation->user->loyalty_points }} Pts
+                </span>
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-900 border border-rose-500/40">
+                    {{ $donation->user->loyalty_rank }}
+                </span>
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-700 max-w-xl mx-auto leading-relaxed pt-2">
+                In heartfelt recognition of your noble voluntary blood donation on <strong class="text-rose-950 font-extrabold">{{ $donation->donation_date ? $donation->donation_date->format('F d, Y') : 'Record' }}</strong> at {{ $donation->location ?? 'Bhagwangola Rural Hospital' }}. Your selfless contribution and dedication to inspiring other voluntary members has saved human lives.
             </p>
 
             <!-- Verification QR Code & Official Seals -->
-            <div class="pt-8 grid grid-cols-3 gap-6 items-end max-w-2xl mx-auto text-xs">
+            <div class="pt-6 grid grid-cols-3 gap-6 items-end max-w-2xl mx-auto text-xs">
                 
                 <!-- Left: President Signature -->
                 <div class="text-center border-t-2 border-slate-400 pt-2">

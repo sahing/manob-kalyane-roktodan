@@ -53,7 +53,12 @@
 
                     <div>
                         <span class="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Donor Honor Rank</span>
-                        <span class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{{ $badge }}</span>
+                        <span class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{{ $user->loyalty_rank }}</span>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Member Loyalty Points</span>
+                        <span class="text-sm font-extrabold text-amber-600 dark:text-amber-400">⭐ {{ $user->loyalty_points }} Pts</span>
                     </div>
 
                     <div>

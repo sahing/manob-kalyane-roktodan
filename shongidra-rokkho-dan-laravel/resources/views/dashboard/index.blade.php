@@ -3,11 +3,20 @@
 @section('title', 'Donor Dashboard — Manab Kalyane Rokto Dan')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ storyModal: false }">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ storyModal: false, copied: false }">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome, {{ $user->name }}</h1>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Role: <span class="uppercase font-bold text-rose-600 dark:text-rose-400">{{ $user->role }}</span> | Phone: {{ $user->phone }}</p>
+        <div class="flex items-center gap-3">
+            @if($user->avatar_url)
+                <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-rose-500 shadow-md">
+            @else
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-rose-600 text-white font-extrabold text-xl flex items-center justify-center border-2 border-slate-300 dark:border-slate-700 shadow-md">
+                    {{ $user->donorProfile?->blood_group ?: substr($user->name, 0, 1) }}
+                </div>
+            @endif
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome, {{ $user->name }}</h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Role: <span class="uppercase font-bold text-rose-600 dark:text-rose-400">{{ $user->role }}</span> | Phone: {{ $user->phone }}</p>
+            </div>
         </div>
         <div class="flex items-center space-x-3">
             <button @click="storyModal = true" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition flex items-center gap-1.5">
@@ -19,6 +28,109 @@
             <a href="{{ route('dashboard.profile') }}" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                 Edit Profile
             </a>
+        </div>
+    </div>
+
+    <!-- Loyalty Rewards & Referral Hub -->
+    <div class="glass-card p-6 rounded-2xl mb-8 bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border border-rose-500/30 text-white shadow-2xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+            
+            <!-- Points & Rank Badge -->
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 text-white font-black text-2xl flex items-center justify-center shadow-lg border border-amber-300/40">
+                    ⭐
+                </div>
+                <div>
+                    <span class="text-xs uppercase font-extrabold text-amber-400 block tracking-wider">Member Loyalty Points</span>
+                    <span class="text-3xl font-black text-white">{{ $user->loyalty_points }} <span class="text-xs text-slate-400 font-semibold">Pts</span></span>
+                    <div class="mt-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase">
+                            {{ $user->loyalty_rank }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referral Stats -->
+            <div class="text-center lg:border-x border-slate-800 px-4 space-y-1">
+                <span class="text-xs uppercase text-slate-400 font-bold block">Invited Members Count</span>
+                <span class="text-2xl font-extrabold text-emerald-400">{{ $user->donorProfile?->referrals_count ?? $user->referrals->count() }} Members Joined</span>
+                <p class="text-[11px] text-slate-400">Earn +50 Loyalty Points for every new member who registers using your link!</p>
+            </div>
+
+            <!-- Share Referral Link -->
+            <div class="space-y-2">
+                <span class="text-xs uppercase text-slate-300 font-extrabold block">Your Personal Invite Link</span>
+                <div class="flex items-center gap-2">
+                    <input type="text" readonly value="{{ route('register') . '?ref=' . $user->referral_code }}" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-rose-300 font-bold focus:outline-none">
+                    <button @click="navigator.clipboard.writeText('{{ route('register') . '?ref=' . $user->referral_code }}'); copied = true; setTimeout(() => copied = false, 3000)" class="px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white whitespace-nowrap">
+                        <span x-text="copied ? '✓ Copied!' : '📋 Copy'"></span>
+                    </button>
+                </div>
+                <a href="https://api.whatsapp.com/send?text={{ urlencode('Join me as a voluntary blood donor on Manab Kalyane Rokto Dan! Register here: ' . route('register') . '?ref=' . $user->referral_code) }}" target="_blank" class="block w-full text-center py-2 rounded-xl text-xs font-extrabold bg-[#25D366] text-white hover:opacity-90 transition shadow">
+                    📱 Invite Friends via WhatsApp (+50 Pts)
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Notification Center Box -->
+    <div class="glass-card p-6 rounded-3xl mb-8 border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🔔</span>
+                <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Profile Notifications & Reminders</h3>
+                @if($unreadNotificationsCount > 0)
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white animate-pulse">
+                        {{ $unreadNotificationsCount }} New
+                    </span>
+                @endif
+            </div>
+            <span class="text-xs text-slate-500 font-semibold">{{ count($notifications) }} Total Notifications</span>
+        </div>
+
+        <div class="space-y-3">
+            @forelse($notifications as $notif)
+                <div class="p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 {{ $notif->is_read ? 'bg-slate-100/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400' : 'bg-rose-500/10 dark:bg-rose-950/30 border-rose-500/30 text-slate-900 dark:text-white shadow-md' }}">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 {{ $notif->type === 'blood_reminder' ? 'bg-rose-600 text-white' : ($notif->type === 'financial_reminder' ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white') }}">
+                            {{ $notif->type === 'blood_reminder' ? '🩸' : ($notif->type === 'financial_reminder' ? '💰' : '📢') }}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ $notif->title }}</h4>
+                                @if(!$notif->is_read)
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed">{{ $notif->message }}</p>
+                            <span class="text-[10px] text-slate-400 font-mono mt-1 block">{{ $notif->created_at->diffForHumans() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 self-end sm:self-center">
+                        @if($notif->action_url)
+                            <a href="{{ $notif->action_url }}" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-500 text-white shadow transition">
+                                View Action ➔
+                            </a>
+                        @endif
+
+                        @if(!$notif->is_read)
+                            <form action="{{ route('dashboard.notifications.read', $notif->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                                    ✓ Mark Read
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            @empty
+                <div class="p-6 text-center text-slate-500 text-xs font-semibold">
+                    You have no active notifications or reminders.
+                </div>
+            @endforelse
         </div>
     </div>
 

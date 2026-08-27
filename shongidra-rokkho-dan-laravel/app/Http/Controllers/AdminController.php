@@ -12,12 +12,20 @@ use App\Models\HeroSlide;
 use App\Models\Gallery;
 use App\Models\DonorStory;
 use App\Models\VisitorInquiry;
+use App\Models\DonationPledge;
+use App\Models\UserNotification;
 use App\Models\SiteContent;
 use App\Models\BlogPost;
 use App\Models\SeoSetting;
 use App\Models\PageAnalytic;
+use App\Models\Role;
+use App\Models\SiteMenuItem;
+use App\Models\HomepageSection;
+use App\Models\CmsPage;
+use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -43,11 +51,15 @@ class AdminController extends Controller
         $stories = DonorStory::latest()->get();
         $blogPosts = BlogPost::latest()->get();
         $seoSettings = SeoSetting::all();
+        $financialPledges = DonationPledge::latest()->get();
+        $totalFinancialRaised = DonationPledge::where('status', 'verified')->sum('amount');
 
         // Analytics Datasets
         $analytics = [
             'total_views' => PageAnalytic::count(),
             'unique_visitors' => PageAnalytic::distinct('ip_address')->count('ip_address'),
+            'unique_tracking_ids' => PageAnalytic::whereNotNull('tracking_id')->distinct('tracking_id')->count('tracking_id'),
+            'donor_contact_clicks' => PageAnalytic::whereIn('action_type', ['contact_donor_phone_call', 'contact_donor_whatsapp', 'inquire_via_society'])->count(),
             'today_views' => PageAnalytic::whereDate('created_at', today())->count(),
             'top_pages' => PageAnalytic::select('path', DB::raw('count(*) as total'))
                                 ->groupBy('path')
@@ -55,7 +67,8 @@ class AdminController extends Controller
                                 ->take(5)->get(),
             'device_breakdown' => PageAnalytic::select('device_type', DB::raw('count(*) as total'))
                                         ->groupBy('device_type')->get(),
-            'recent_traffic' => PageAnalytic::latest()->take(20)->get(),
+            'recent_traffic' => PageAnalytic::latest()->take(50)->get(),
+            'donor_contacts' => PageAnalytic::whereIn('action_type', ['contact_donor_phone_call', 'contact_donor_whatsapp', 'inquire_via_society'])->latest()->take(30)->get(),
         ];
 
         $siteContent = [
@@ -66,10 +79,33 @@ class AdminController extends Controller
             'about_text' => SiteContent::getValue('about_text'),
         ];
 
+        Role::ensureDefaultRolesExist();
+        SiteMenuItem::ensureDefaultMenuItems();
+        HomepageSection::ensureDefaultSections();
+        CmsPage::ensureDefaultPages();
+
+        $roles = Role::withCount('users')->get();
+        $availablePermissions = Role::defaultPermissions();
+        $menuItems = SiteMenuItem::orderBy('sort_order')->get();
+        $homepageSections = HomepageSection::orderBy('sort_order')->get();
+        $cmsPages = CmsPage::latest()->get();
+        $mediaAssets = MediaAsset::latest()->get();
+
+        $branding = [
+            'site_logo' => SiteContent::getValue('site_logo'),
+            'site_dark_logo' => SiteContent::getValue('site_dark_logo'),
+            'site_favicon' => SiteContent::getValue('site_favicon'),
+            'site_tagline' => SiteContent::getValue('site_tagline'),
+            'custom_css' => SiteContent::getValue('custom_css'),
+            'custom_js' => SiteContent::getValue('custom_js'),
+            'enable_custom_css' => SiteContent::getValue('enable_custom_css', '1'),
+        ];
+
         return view('admin.index', compact(
             'stats', 'recentRequests', 'users', 'members', 'slides', 
             'gallery', 'inquiries', 'stories', 'siteContent', 
-            'blogPosts', 'seoSettings', 'analytics'
+            'blogPosts', 'seoSettings', 'analytics', 'financialPledges', 'totalFinancialRaised',
+            'roles', 'availablePermissions', 'menuItems', 'homepageSections', 'cmsPages', 'mediaAssets', 'branding'
         ));
     }
 
@@ -271,5 +307,186 @@ class AdminController extends Controller
             SiteContent::setValue($key, $value);
         }
         return back()->with('success', 'Site settings updated successfully.');
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::with('donorProfile')->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'required|string|max:20|unique:users,phone,' . $user->id,
+            'role' => 'required|in:donor,member,admin',
+            'loyalty_points' => 'required|integer|min:0',
+            'password' => 'nullable|string|min:6',
+            'blood_group' => 'required|string|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
+            'availability_status' => 'required|in:available,unavailable',
+            'allow_direct_contact' => 'nullable|boolean',
+            'donor_type' => 'required|in:regular,emergency',
+            'village' => 'nullable|string|max:255',
+            'block' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'last_donation_date' => 'nullable|date',
+        ]);
+
+        $userData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'role' => $validated['role'],
+            'loyalty_points' => $validated['loyalty_points'],
+        ];
+
+        if (!empty($validated['password'])) {
+            $userData['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($userData);
+
+        DonorProfile::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'blood_group' => $validated['blood_group'],
+                'availability_status' => $validated['availability_status'],
+                'allow_direct_contact' => $request->boolean('allow_direct_contact', false),
+                'donor_type' => $validated['donor_type'],
+                'village' => $validated['village'],
+                'block' => $validated['block'],
+                'district' => $validated['district'],
+                'last_donation_date' => $validated['last_donation_date'],
+            ]
+        );
+
+        return back()->with('success', "User '{$user->name}' profile and password updated successfully!");
+    }
+
+    public function updatePledgeStatus(Request $request, $id)
+    {
+        $pledge = DonationPledge::findOrFail($id);
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,verified,rejected',
+        ]);
+
+        $pledge->update(['status' => $validated['status']]);
+
+        return back()->with('success', "Financial pledge status updated to '{$validated['status']}' successfully.");
+    }
+
+    public function recordPledge(Request $request)
+    {
+        $validated = $request->validate([
+            'donor_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'amount' => 'required|numeric|min:1',
+            'payment_type' => 'required|in:one_time,weekly,monthly',
+            'transaction_id' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $validated['status'] = 'verified';
+
+        DonationPledge::create($validated);
+
+        return back()->with('success', 'Manual financial donation recorded as verified successfully!');
+    }
+
+    public function sendBulkReminder(Request $request)
+    {
+        $validated = $request->validate([
+            'target' => 'required|string',
+            'title' => 'required|string|max:255',
+            'message' => 'required|string|max:1000',
+            'type' => 'required|in:blood_reminder,financial_reminder,announcement',
+            'action_url' => 'nullable|string|max:255',
+        ]);
+
+        $query = User::query();
+
+        if ($validated['target'] === 'eligible_only') {
+            $query->whereHas('donorProfile', function ($q) {
+                $q->whereNull('last_donation_date')
+                  ->orWhere('last_donation_date', '<=', now()->subDays(90));
+            });
+        } elseif (in_array($validated['target'], ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])) {
+            $query->whereHas('donorProfile', function ($q) use ($validated) {
+                $q->where('blood_group', $validated['target']);
+            });
+        }
+
+        $users = $query->get();
+        $sentCount = 0;
+
+        foreach ($users as $user) {
+            UserNotification::create([
+                'user_id' => $user->id,
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'type' => $validated['type'],
+                'action_url' => $validated['action_url'] ?? null,
+                'is_read' => false,
+            ]);
+            $sentCount++;
+        }
+
+        return back()->with('success', "Bulk notification successfully sent to {$sentCount} registered users!");
+    }
+
+    public function storeRole(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|exists:roles,id',
+            'name' => 'required|string|max:100|alpha_dash|unique:roles,name,' . ($request->id ?? 'NULL'),
+            'label' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'permissions' => 'nullable|array',
+        ]);
+
+        $permissions = $validated['permissions'] ?? [];
+
+        $role = Role::updateOrCreate(
+            ['id' => $request->id],
+            [
+                'name' => strtolower($validated['name']),
+                'label' => $validated['label'],
+                'description' => $validated['description'] ?? null,
+                'permissions' => array_values($permissions),
+                'is_system' => false,
+            ]
+        );
+
+        return back()->with('success', "Role '{$role->label}' saved with updated permissions successfully!");
+    }
+
+    public function deleteRole($id)
+    {
+        $role = Role::findOrFail($id);
+
+        if ($role->is_system || in_array($role->name, ['admin', 'donor'])) {
+            return back()->with('error', "System core role '{$role->label}' cannot be deleted!");
+        }
+
+        $role->delete();
+
+        return back()->with('success', "Role '{$role->label}' deleted successfully!");
+    }
+
+    public function assignUserRole(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'role_name' => 'required|string|exists:roles,name',
+        ]);
+
+        $role = Role::where('name', $validated['role_name'])->firstOrFail();
+
+        $user->update([
+            'role_id' => $role->id,
+            'role' => $role->name,
+        ]);
+
+        return back()->with('success', "User '{$user->name}' role updated to '{$role->label}' successfully!");
     }
 }

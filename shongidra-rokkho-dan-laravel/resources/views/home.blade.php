@@ -28,18 +28,22 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
             <!-- Left Side: High-Impact Hero Headline & Live Status -->
+            @php
+                $heroSec = \App\Models\HomepageSection::where('key', 'hero')->where('is_visible', true)->first();
+                $ctaSec = \App\Models\HomepageSection::where('key', 'cta')->where('is_visible', true)->first();
+            @endphp
             <div class="lg:col-span-5 space-y-6 text-center lg:text-left">
                 <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider bg-rose-600/20 border border-rose-500/40 text-rose-300 shadow-lg backdrop-blur-md">
                     <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
-                    Bhagwangola Voluntary Blood Network
+                    {{ $heroSec->subtitle ?? 'Bhagwangola Voluntary Blood Network' }}
                 </div>
 
                 <h1 class="text-3xl sm:text-4xl md:text-5xl font-heading font-extrabold text-white leading-tight tracking-tight drop-shadow-xl">
-                    Find Voluntary <span class="bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-rose-500 to-amber-400">Blood Donors</span> in Seconds
+                    {{ $heroSec->title ?? 'Saving Lives in Bhagwangola Through Voluntary Blood Donation' }}
                 </h1>
 
                 <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-medium">
-                    Direct access to verified voluntary blood donors across Bhagwangola-I, Bhagwangola-II, Lalgola & Murshidabad District. 100% free & non-commercial.
+                    {{ $heroSec->content ?? 'Direct access to verified voluntary blood donors across Bhagwangola-I, Bhagwangola-II, Lalgola & Murshidabad District. 100% free & non-commercial.' }}
                 </p>
 
                 <!-- Feature Highlights Badges -->
@@ -57,11 +61,11 @@
 
                 <!-- Emergency Patient Call CTA -->
                 <div class="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                    <a href="{{ route('requests.index') }}" class="px-6 py-3.5 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-xl glow-red hover:opacity-95 transition flex items-center gap-2 transform hover:-translate-y-0.5">
-                        <span>Emergency Patient Requests 🚨</span>
+                    <a href="{{ $heroSec->button_url ?? route('requests.index') }}" class="px-6 py-3.5 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-xl glow-red hover:opacity-95 transition flex items-center gap-2 transform hover:-translate-y-0.5">
+                        <span>{{ $heroSec->button_text ?? 'Emergency Patient Requests 🚨' }}</span>
                     </a>
-                    <a href="tel:+919832100000" class="px-5 py-3.5 rounded-2xl text-xs font-bold bg-slate-900/90 text-slate-200 border border-slate-700 hover:bg-slate-800 shadow-md backdrop-blur-md transition flex items-center gap-2">
-                        <span>📞 Call Helpline</span>
+                    <a href="{{ $heroSec->secondary_button_url ?? 'tel:+919832100000' }}" class="px-5 py-3.5 rounded-2xl text-xs font-bold bg-slate-900/90 text-slate-200 border border-slate-700 hover:bg-slate-800 shadow-md backdrop-blur-md transition flex items-center gap-2">
+                        <span>{{ $heroSec->secondary_button_text ?? '📞 Call Helpline' }}</span>
                     </a>
                 </div>
             </div>

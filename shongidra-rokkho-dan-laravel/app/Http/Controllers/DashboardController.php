@@ -6,20 +6,24 @@ use Illuminate\Http\Request;
 use App\Models\DonorProfile;
 use App\Models\DonationHistory;
 use App\Models\BloodRequest;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = Auth::user()->load(['donorProfile', 'donations', 'bloodRequests']);
+        $user = Auth::user()->load(['donorProfile', 'donations', 'bloodRequests', 'notifications']);
 
         $lastDonation = $user->donorProfile?->last_donation_date;
         $daysSince = $lastDonation ? now()->diffInDays($lastDonation) : null;
         $isEligible = !$lastDonation || $daysSince >= 90;
         $nextEligibleDate = $lastDonation ? $lastDonation->copy()->addDays(90) : now();
 
-        return view('dashboard.index', compact('user', 'daysSince', 'isEligible', 'nextEligibleDate'));
+        $notifications = $user->notifications;
+        $unreadNotificationsCount = $notifications->where('is_read', false)->count();
+
+        return view('dashboard.index', compact('user', 'daysSince', 'isEligible', 'nextEligibleDate', 'notifications', 'unreadNotificationsCount'));
     }
 
     public function profile()
@@ -34,9 +38,12 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'required|string|max:20',
+            'avatar_url' => 'nullable|url|max:2048',
             'blood_group' => 'required|string|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
             'availability_status' => 'required|in:available,unavailable',
+            'allow_direct_contact' => 'nullable|boolean',
             'donor_type' => 'required|in:regular,emergency',
             'village' => 'nullable|string|max:255',
             'block' => 'required|string|max:255',
@@ -47,7 +54,9 @@ class DashboardController extends Controller
 
         $user->update([
             'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'],
+            'avatar_url' => $validated['avatar_url'] ?? null,
         ]);
 
         $profile = DonorProfile::updateOrCreate(
@@ -55,6 +64,7 @@ class DashboardController extends Controller
             [
                 'blood_group' => $validated['blood_group'],
                 'availability_status' => $validated['availability_status'],
+                'allow_direct_contact' => $request->boolean('allow_direct_contact', false),
                 'donor_type' => $validated['donor_type'],
                 'village' => $validated['village'],
                 'block' => $validated['block'],
@@ -97,5 +107,17 @@ class DashboardController extends Controller
         $verificationUrl = route('verify.show', ['code' => $donation->certificate_id]);
 
         return view('dashboard.certificate', compact('donation', 'verificationUrl'));
+    }
+
+    public function markNotificationAsRead($id)
+    {
+        $notification = Auth::user()->notifications()->findOrFail($id);
+        $notification->update(['is_read' => true]);
+
+        if ($notification->action_url) {
+            return redirect($notification->action_url);
+        }
+
+        return back()->with('success', 'Notification marked as read.');
     }
 }

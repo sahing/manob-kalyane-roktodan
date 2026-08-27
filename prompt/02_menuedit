@@ -1,0 +1,322 @@
+## CMS & Website Customization Requirements
+
+Upgrade the admin panel into a **fully dynamic CMS**, allowing the administrator to manage the website content, branding, navigation, homepage sections, links, and custom styling without editing code.
+
+### 1. Logo Management
+
+* Upload/change website logo from the admin panel.
+* Support PNG, JPG, SVG, and WebP where appropriate.
+* Preview the current logo.
+* Replace or remove the logo.
+* Logo should automatically update everywhere it is used across the website, including header, footer, login pages, certificates/cards, and other configured locations.
+
+### 2. Website Content Management
+
+Allow administrators to edit **all editable website content dynamically**.
+
+Admin should be able to change:
+
+* Headings
+* Subheadings
+* Paragraphs
+* Button text
+* Labels
+* Section descriptions
+* Contact information
+* Footer content
+* Copyright text
+* Images
+* Icons
+* Testimonials
+* Donor-related content
+* Call-to-action content
+* Any other CMS-enabled text/content
+
+Changes made in the CMS should immediately reflect on the frontend without requiring code changes.
+
+### 3. Homepage Section-Wise CMS
+
+Make the homepage completely **section-based and dynamically editable**.
+
+Example sections:
+
+* Hero
+* About
+* Donation Statistics
+* Why Donate
+* Donor Stories
+* Donation Process
+* Testimonials
+* Campaigns
+* Call to Action
+* Contact
+* Footer
+
+Each section should have its own CMS management interface.
+
+Admin should be able to:
+
+* Edit section content
+* Edit section title/subtitle
+* Change images
+* Change buttons
+* Change button links
+* Enable/disable sections
+* Duplicate sections where appropriate
+* Delete sections
+* Add new sections
+* Rearrange section order using drag-and-drop
+
+### 4. Add Custom Sections
+
+Provide an option:
+
+**+ Add New Section**
+
+The administrator should be able to create a custom section by selecting/configuring:
+
+* Section title
+* Description
+* Image
+* Icon
+* Buttons
+* Links
+* Layout
+* Background
+* Custom content
+
+The system should support reusable section components rather than hard-coding every homepage block.
+
+### 5. Menu Management
+
+Create a complete **Menu Manager**.
+
+Admin should be able to:
+
+* Add menu item
+* Edit menu item
+* Delete menu item
+* Rename menu item
+* Change menu URL
+* Add external links
+* Link to internal pages
+* Link to CMS sections
+* Create dropdown menus
+* Create nested submenu items
+* Rearrange menu items using drag-and-drop
+* Enable/disable menu items
+
+Example:
+
+**Home**
+**About**
+**Donate**
+**Donor Stories**
+**Campaigns**
+**Contact**
+
+The administrator should be able to change this structure without modifying code.
+
+### 6. Link Management
+
+Every CMS button/link should be editable.
+
+For each button or link provide:
+
+* Button text
+* URL
+* Internal page selection
+* External URL
+* Open in same tab/new tab
+* Enable/disable
+
+Example:
+
+`Donate Now → /donate`
+
+The administrator should be able to change it to:
+
+`Donate Now → /make-a-donation`
+
+without developer intervention.
+
+### 7. Page Management
+
+Create a CMS page manager allowing administrators to:
+
+* Create pages
+* Edit pages
+* Delete pages
+* Publish/unpublish pages
+* Change page title
+* Change page content
+* Upload featured image
+* Configure page URL/slug
+* Add sections to the page
+* Rearrange sections
+
+### 8. Dynamic Homepage Builder
+
+The homepage should not depend on hard-coded static content.
+
+Use a structure similar to:
+
+**Homepage**
+→ Section 1
+→ Section 2
+→ Section 3
+→ Section 4
+→ Section 5
+
+Each section loads its content from the CMS/database.
+
+Frontend rendering should dynamically loop through the active sections according to their saved order.
+
+### 9. Custom CSS
+
+Add an administrator-controlled:
+
+**Custom CSS**
+
+panel.
+
+Allow the administrator to enter custom CSS that applies to the website.
+
+Provide:
+
+* CSS editor
+* Save/update
+* Enable/disable custom CSS
+* Preview where possible
+* Reset/remove custom CSS
+
+The custom CSS should load safely and should not require editing theme/source files.
+
+Optionally provide separate controls for:
+
+* Global CSS
+* Homepage CSS
+* Individual page CSS
+
+### 10. Custom JavaScript — Optional
+
+If supported, provide a separate administrator-only **Custom JavaScript** area with appropriate security restrictions.
+
+Do not allow ordinary users or donors to inject scripts.
+
+### 11. Media Library
+
+Create a centralized media library for CMS assets.
+
+Admin can:
+
+* Upload images
+* Replace images
+* Delete images
+* Search images
+* Reuse existing images
+* View image details
+
+CMS sections should be able to select images from this library instead of repeatedly uploading files.
+
+### 12. Visibility Controls
+
+Every homepage section should have:
+
+**Published / Hidden**
+
+status.
+
+Hidden sections should remain saved in the CMS but should not appear on the public website.
+
+### 13. Draft & Publishing
+
+Where practical, support:
+
+**Draft → Preview → Publish**
+
+so administrators can prepare changes before making them publicly visible.
+
+### 14. Database-Driven Architecture
+
+Do not hard-code editable content in templates.
+
+Use a structure such as:
+
+**Pages**
+
+* id
+* title
+* slug
+* status
+
+**Page Sections**
+
+* id
+* page_id
+* section_type
+* section_order
+* status
+* configuration/content
+
+**Menus**
+
+* id
+* name
+* location
+
+**Menu Items**
+
+* id
+* menu_id
+* parent_id
+* title
+* url
+* order
+* status
+
+**Media**
+
+* id
+* file
+* type
+* metadata
+
+**Site Settings**
+
+* logo
+* favicon
+* contact information
+* social links
+* footer content
+* custom CSS
+
+### 15. Important Requirement
+
+The CMS must be **truly dynamic**.
+
+An administrator should be able to change the website's:
+
+**Logo → Content → Images → Buttons → Links → Menus → Homepage Sections → Section Order → Visibility → Pages → Custom CSS**
+
+without requiring a developer to modify the source code.
+
+The frontend should automatically retrieve the latest published CMS data and render the website accordingly.
+
+### Final Admin Experience
+
+**Admin Dashboard**
+
+→ Website Settings
+→ Logo & Branding
+→ Media Library
+→ Pages
+→ Homepage Builder
+→ Sections
+→ Menu Manager
+→ Donor Stories
+→ Content Manager
+→ Custom CSS
+→ Site Settings
+
+The goal is to make the website **fully CMS-driven, modular, editable, and scalable**, while keeping the existing frontend design and functionality intact unless explicitly changed by the administrator.

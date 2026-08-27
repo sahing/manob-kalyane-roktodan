@@ -13,10 +13,13 @@ use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\CmsController;
 use App\Http\Middleware\AdminMiddleware;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/analytics/log-click', [AnalyticsController::class, 'logClick'])->name('analytics.log-click');
 
 Route::get('/search', [DonorController::class, 'search'])->name('donors.search');
 Route::get('/donor/{id}', [DonorController::class, 'show'])->name('donors.show');
@@ -64,11 +67,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/stories/comments/{commentId}', [StoryController::class, 'updateComment'])->name('stories.comments.update');
     Route::delete('/stories/comments/{commentId}', [StoryController::class, 'deleteComment'])->name('stories.comments.delete');
 
+    // Gallery Upload
+    Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/profile', [DashboardController::class, 'profile'])->name('dashboard.profile');
     Route::post('/dashboard/profile', [DashboardController::class, 'updateProfile'])->name('dashboard.profile.update');
     Route::get('/dashboard/card', [DashboardController::class, 'card'])->name('dashboard.card');
     Route::get('/dashboard/certificate/{id}', [DashboardController::class, 'showCertificate'])->name('dashboard.certificate');
+    Route::post('/dashboard/notifications/{id}/read', [DashboardController::class, 'markNotificationAsRead'])->name('dashboard.notifications.read');
 });
 
 // Admin Routes
@@ -76,6 +83,8 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/inquiries/live', [AdminController::class, 'getLiveInquiries'])->name('admin.inquiries.live');
     Route::post('/users/{id}/role', [AdminController::class, 'updateUserRole'])->name('admin.users.role');
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::post('/reminders/bulk', [AdminController::class, 'sendBulkReminder'])->name('admin.reminders.bulk');
     Route::post('/donations/record', [AdminController::class, 'recordDonation'])->name('admin.donations.record');
     Route::post('/slides', [AdminController::class, 'storeSlide'])->name('admin.slides.store');
     Route::delete('/slides/{id}', [AdminController::class, 'deleteSlide'])->name('admin.slides.delete');
@@ -89,4 +98,29 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::post('/seo/{id}', [AdminController::class, 'updateSeoSetting'])->name('admin.seo.update');
     
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
+    
+    // Financial Pledges Management
+    Route::post('/pledges/{id}/status', [AdminController::class, 'updatePledgeStatus'])->name('admin.pledges.status');
+    Route::post('/pledges/record', [AdminController::class, 'recordPledge'])->name('admin.pledges.record');
+
+    // Role-Based Access Control (RBAC) Management
+    Route::post('/roles', [AdminController::class, 'storeRole'])->name('admin.roles.store');
+    Route::delete('/roles/{id}', [AdminController::class, 'deleteRole'])->name('admin.roles.delete');
+    Route::post('/users/{id}/assign-role', [AdminController::class, 'assignUserRole'])->name('admin.users.assign-role');
+
+    // CMS & Website Customization Suite Routes
+    Route::post('/branding', [CmsController::class, 'updateBranding'])->name('admin.branding.update');
+    Route::delete('/branding/logo/{type}', [CmsController::class, 'removeLogo'])->name('admin.branding.remove-logo');
+    Route::post('/menu-items', [CmsController::class, 'storeMenuItem'])->name('admin.menu.store');
+    Route::delete('/menu-items/{id}', [CmsController::class, 'deleteMenuItem'])->name('admin.menu.delete');
+    Route::post('/homepage-sections', [CmsController::class, 'storeSection'])->name('admin.sections.store');
+    Route::delete('/homepage-sections/{id}', [CmsController::class, 'deleteSection'])->name('admin.sections.delete');
+    Route::post('/cms-pages', [CmsController::class, 'storePage'])->name('admin.pages.store');
+    Route::delete('/cms-pages/{id}', [CmsController::class, 'deletePage'])->name('admin.pages.delete');
+    Route::post('/media-assets', [CmsController::class, 'storeMedia'])->name('admin.media.store');
+    Route::delete('/media-assets/{id}', [CmsController::class, 'deleteMedia'])->name('admin.media.delete');
+    Route::post('/custom-code', [CmsController::class, 'updateCustomCode'])->name('admin.custom-code.update');
 });
+
+// Dynamic Public CMS Page Route
+Route::get('/p/{slug}', [CmsController::class, 'showPage'])->name('pages.show');

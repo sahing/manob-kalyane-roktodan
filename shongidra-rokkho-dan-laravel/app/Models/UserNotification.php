@@ -5,22 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PageAnalytic extends Model
+class UserNotification extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'tracking_id',
         'user_id',
-        'user_name',
-        'url',
-        'path',
-        'ip_address',
-        'user_agent',
-        'device_type',
-        'referrer',
-        'action_type',
-        'target_details',
+        'title',
+        'message',
+        'type',
+        'action_url',
+        'is_read',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
     ];
 
     public function user()

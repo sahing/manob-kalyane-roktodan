@@ -49,14 +49,58 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'referred_by_id');
     }
 
+    public function roleModel()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function getRoleObject()
+    {
+        if ($this->roleModel) {
+            return $this->roleModel;
+        }
+        Role::ensureDefaultRolesExist();
+        return Role::where('name', $this->role)->first();
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        if ($this->role === $roleName) {
+            return true;
+        }
+        $r = $this->getRoleObject();
+        return $r && $r->name === $roleName;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+        $r = $this->getRoleObject();
+        return $r ? $r->hasPermission($permission) : false;
+    }
+
+    public function canAccessAdmin(): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+        $r = $this->getRoleObject();
+        if (!$r || empty($r->permissions)) {
+            return false;
+        }
+        return count(array_intersect($r->permissions, array_keys(Role::defaultPermissions()))) > 0;
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === 'admin' || $this->hasPermission('manage_users');
     }
 
     public function isMember(): bool
     {
-        return in_array($this->role, ['admin', 'member']);
+        return in_array($this->role, ['admin', 'member']) || $this->canAccessAdmin();
     }
 
     public function getLoyaltyRankAttribute(): string
@@ -89,6 +133,11 @@ class User extends Authenticatable
                 $user->saveQuietly();
             }
         });
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class)->latest();
     }
 
     protected function casts(): array

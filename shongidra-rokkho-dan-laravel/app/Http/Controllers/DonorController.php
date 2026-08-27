@@ -12,33 +12,63 @@ class DonorController extends Controller
     public function search(Request $request)
     {
         $group = $request->query('blood_group');
-        $district = $request->query('district', 'Murshidabad');
+        $district = $request->query('district');
         $block = $request->query('block');
+        $keyword = $request->query('q');
         $availableOnly = $request->boolean('available_only', true);
+        
+        // Has user submitted a search action?
+        $hasSearched = $request->has('blood_group') || $request->has('block') || $request->has('q') || $request->has('searched') || $request->has('all');
 
-        $query = DonorProfile::with('user');
+        $donors = null;
 
-        if ($group) {
-            $query->where('blood_group', $group);
+        if ($hasSearched) {
+            $query = DonorProfile::with('user');
+
+            if ($group) {
+                $query->where('blood_group', $group);
+            }
+
+            if ($district) {
+                $query->where('district', 'LIKE', "%{$district}%");
+            }
+
+            if ($block) {
+                $query->where('block', 'LIKE', "%{$block}%");
+            }
+
+            if ($keyword) {
+                $query->where(function($q) use ($keyword) {
+                    $q->whereHas('user', function($u) use ($keyword) {
+                        $u->where('name', 'LIKE', "%{$keyword}%")
+                          ->orWhere('phone', 'LIKE', "%{$keyword}%");
+                    })
+                    ->orWhere('village', 'LIKE', "%{$keyword}%")
+                    ->orWhere('block', 'LIKE', "%{$keyword}%");
+                });
+            }
+
+            if ($availableOnly) {
+                $query->where('availability_status', 'available');
+            }
+
+            // Paginate 20 donors per page
+            $donors = $query->orderByRaw('last_donation_date IS NULL DESC, last_donation_date ASC')->paginate(20);
         }
-
-        if ($district) {
-            $query->where('district', 'LIKE', "%{$district}%");
-        }
-
-        if ($block) {
-            $query->where('block', 'LIKE', "%{$block}%");
-        }
-
-        if ($availableOnly) {
-            $query->where('availability_status', 'available');
-        }
-
-        $donors = $query->orderByRaw('last_donation_date IS NULL DESC, last_donation_date ASC')->paginate(12);
 
         $inquiryGatePassed = Auth::check() || session()->has('inquiry_passed');
 
-        return view('donors.search', compact('donors', 'group', 'district', 'block', 'availableOnly', 'inquiryGatePassed'));
+        // Handle AJAX auto-infinite scroll requests
+        if ($request->ajax() && $donors) {
+            $cardsHtml = view('donors._cards', compact('donors', 'inquiryGatePassed'))->render();
+            return response()->json([
+                'html' => $cardsHtml,
+                'next_page_url' => $donors->nextPageUrl(),
+                'has_more' => $donors->hasMorePages(),
+            ]);
+        }
+
+        return view('donors.search', compact('donors', 'group', 'district', 'block', 'keyword', 'availableOnly', 'inquiryGatePassed', 'hasSearched'));
     }
 
     public function show($id)
