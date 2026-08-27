@@ -1,0 +1,368 @@
+## Project Requirement
+
+Build a **dynamic Donor Identity Card + Donation Certificate system** for the website.
+
+Every registered donor should automatically receive a personalized digital **Donor Identity Card/Certificate**. The card must be generated dynamically from the donor's profile data and donation records, so the administrator does **not** need to manually create or edit each card.
+
+### 1. Donor Identity Card
+
+Create a professional, certificate-style donor identity card containing:
+
+* Donor's profile photograph
+* Donor's full name
+* Donor ID / unique donor number
+* Email ID
+* Phone number, if permitted
+* Total number of donations
+* Date of registration
+* Blood group, if available in the profile
+* Other relevant donor information configured by the administrator
+* Organization/website logo
+* Optional QR code for verifying the donor profile
+* Unique card/certificate number
+* Optional issue date
+
+The design must look like an official **donor recognition/identity certificate**, rather than a simple database profile.
+
+### 2. Dynamic Data Population
+
+The card must be completely data-driven.
+
+When a donor logs into their account, the system should automatically fetch information from:
+
+**User Profile → Donation Records → Donor Statistics → Card Template**
+
+For example:
+
+`{{donor_name}}` → User's registered name
+
+`{{donor_image}}` → Profile image
+
+`{{donor_email}}` → Registered email
+
+`{{donor_id}}` → Unique donor ID
+
+`{{donation_count}}` → Automatically calculated total number of successful donations
+
+`{{registration_date}}` → User registration date
+
+Do **not** hard-code donor information into the card.
+
+If the donor updates their profile photograph or other permitted information, the card should automatically reflect the updated information.
+
+### 3. Donation Count
+
+The **"Number of Times Donated"** field must be calculated dynamically from the donation database.
+
+Example:
+
+* Donor has 1 completed donation → `1 Time`
+* Donor has 5 completed donations → `5 Times`
+* Donor has 12 completed donations → `12 Times`
+
+Only donations with the appropriate status, such as **Completed/Verified**, should be included in the count.
+
+Do not allow the donor to manually edit this number.
+
+The administrator should be able to configure which donation statuses are counted.
+
+### 4. Background Upload System
+
+Create an admin-side customization option where the administrator can upload the card/certificate background.
+
+The administrator should be able to:
+
+* Upload a JPG/PNG/WebP background
+* Replace the existing background
+* Preview the background
+* Set the background as active
+* Maintain different templates if required
+* Select which template is currently active
+
+The uploaded background should act as the **visual design layer**, while donor information should be dynamically overlaid on top of it.
+
+### 5. Template-Based Positioning
+
+The system should support configurable placement of dynamic fields.
+
+For example:
+
+* Donor photo → fixed/configurable position
+* Name → center/top section
+* Donor ID → designated area
+* Email → designated area
+* Donation count → highlighted section
+* QR code → bottom/right section
+* Logo → top/side section
+
+The administrator should ideally be able to configure:
+
+* X/Y position
+* Width/height
+* Font size
+* Font weight
+* Text alignment
+* Text color
+* Image size
+* QR-code position
+* Visibility of individual fields
+
+This allows a new background design to be uploaded without rebuilding the entire system.
+
+### 6. Donor Dashboard
+
+Inside the donor's account dashboard, create a section such as:
+
+**My Donor Card**
+
+Display:
+
+* Live preview of the donor card
+* Current profile information
+* Current donation count
+* Card/Certificate number
+* QR verification option
+
+Provide buttons:
+
+**View Card**
+
+**Download Card**
+
+**Print Card**
+
+If PDF generation is supported, also provide:
+
+**Download PDF Certificate**
+
+### 7. QR Code Verification
+
+Generate a unique QR code for every donor card.
+
+When scanned, the QR code should open a public verification page such as:
+
+`/verify-donor/{unique-donor-id}`
+
+The verification page should display only information that the organization has decided to make public, for example:
+
+* Donor name
+* Donor ID
+* Donor photograph
+* Number of donations
+* Verification status
+* Certificate/card validity
+
+Do **not** expose private information such as the donor's password, private account information, sensitive personal information, or unrestricted database data.
+
+### 8. Administrator Panel
+
+Create an administration interface containing:
+
+**Donor Management**
+
+* View donors
+* Search donors
+* View donor profiles
+* View donation history
+* View total donation count
+* View generated card
+
+**Card Template Management**
+
+* Upload background
+* Preview template
+* Configure fields
+* Configure typography
+* Configure positions
+* Enable/disable fields
+* Set active template
+
+**Certificate Management**
+
+* Generate/re-generate certificate
+* Download certificate
+* Print certificate
+* View certificate status
+* Revoke certificate if required
+* Restore/reissue certificate
+
+### 9. Automatic Updates
+
+The card must remain synchronized with the donor database.
+
+For example:
+
+If a donor makes their 6th successful donation:
+
+`Donation Database → Donation Count = 6 → Donor Card automatically displays "6 Times"`
+
+If the donor changes their profile photo:
+
+`User Profile → New Photo → Donor Card automatically displays the new photo`
+
+No manual regeneration should be required unless the system uses a permanently generated PDF snapshot.
+
+### 10. Unique Donor Identification
+
+Every donor should receive a unique, non-duplicating donor ID.
+
+Example:
+
+`DON-000001`
+
+`DON-000002`
+
+`DON-000003`
+
+The ID should be generated automatically when the donor account is created or when they become an approved donor.
+
+Do not use email address as the primary unique identifier.
+
+### 11. Responsive Design
+
+The card should be optimized for:
+
+* Desktop
+* Mobile
+* Tablet
+* Digital sharing
+* Printing
+* PDF generation
+
+The card preview should maintain the correct aspect ratio and should not distort the uploaded background.
+
+### 12. Security & Privacy
+
+Implement proper authorization.
+
+A donor should only be able to access **their own card**.
+
+Administrators should have permission-based access to donor records.
+
+Public QR verification should expose only approved public information.
+
+Prevent users from manipulating:
+
+* Donation count
+* Donor ID
+* Verification status
+* Certificate number
+* Other administrator-controlled fields
+
+All dynamic values must come from the server/database rather than trusted client-side input.
+
+### 13. Recommended Data Structure
+
+Use a structure similar to:
+
+**Users**
+
+* id
+* donor_id
+* name
+* email
+* phone
+* profile_image
+* registration_date
+* status
+
+**Donations**
+
+* id
+* donor_id
+* donation_date
+* status
+* donation_reference
+
+**Donor Card**
+
+* id
+* donor_id
+* template_id
+* certificate_number
+* issue_date
+* status
+
+**Card Template**
+
+* id
+* template_name
+* background_image
+* configuration
+* active_status
+
+The donation count should preferably be calculated from the donation records rather than stored as an independently editable number.
+
+### 14. Important Architecture Principle
+
+Separate the system into three layers:
+
+**DATA LAYER**
+
+Donor profile + donation history
+
+↓
+
+**LOGIC LAYER**
+
+Calculate donation count + generate donor ID + determine certificate status + retrieve template
+
+↓
+
+**PRESENTATION LAYER**
+
+Background + donor photo + dynamic text + QR code + certificate design
+
+This separation will make the system scalable and easier to maintain.
+
+### 15. Final User Experience
+
+The complete flow should be:
+
+**Donor registers**
+
+↓
+
+**Donor profile is created**
+
+↓
+
+**Unique Donor ID is generated**
+
+↓
+
+**Donor makes donations**
+
+↓
+
+**Donation records are verified**
+
+↓
+
+**Donation count automatically increases**
+
+↓
+
+**Donor logs into dashboard**
+
+↓
+
+**System dynamically generates the Donor Identity Card**
+
+↓
+
+**Profile information + donation statistics are placed on the uploaded certificate background**
+
+↓
+
+**Donor can view, download, print, or share the card**
+
+↓
+
+**Anyone with the QR code can verify the certificate through the public verification page**
+
+### Design Goal
+
+The final card should feel **official, premium, trustworthy, and suitable for a recognized donor organization**. The background should be customizable by the administrator, while all donor-specific information remains dynamic and database-driven.
+
+The implementation should be modular so that additional fields, templates, certificate formats, donor levels, badges, achievements, and future donation statistics can be added without rebuilding the entire system.
