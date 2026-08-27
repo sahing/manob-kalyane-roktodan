@@ -439,7 +439,10 @@
                                             'village' => $profile->village ?? '',
                                             'block' => $profile->block ?? 'Bhagwangola-I',
                                             'district' => $profile->district ?? 'Murshidabad',
-                                            'last_donation_date' => $profile?->last_donation_date?->format('Y-m-d') ?? ''
+                                            'last_donation_date' => $profile?->last_donation_date?->format('Y-m-d') ?? '',
+                                            'assigned_email' => $u->assigned_email ?? '',
+                                            'assigned_email_password' => $u->assigned_email_password ?? '',
+                                            'assigned_email_login_url' => $u->assigned_email_login_url ?? 'https://webmail.mabia.in'
                                         ]) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 font-bold text-xs transition">
                                             ✏️ Edit
                                         </button>
@@ -563,6 +566,88 @@
             <div class="glass-card p-6 rounded-3xl text-center border border-amber-500/20">
                 <div class="text-xs uppercase font-bold text-slate-500 mb-1">Today's Total Traffic</div>
                 <div class="text-3xl font-extrabold text-amber-500">{{ number_format($analytics['today_views']) }}</div>
+            </div>
+        </div>
+
+        <!-- Real-Time Contact & Donor Request Inquiries -->
+        <div class="glass-card rounded-3xl overflow-hidden shadow-xl border border-emerald-500/30">
+            <div class="p-4 bg-gradient-to-r from-emerald-950/50 via-slate-900 to-slate-950 border-b border-emerald-500/30 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+                        <span>💬</span> Real-Time Contact & Donor Request Inquiries (Live Session Unlocks)
+                    </h3>
+                    <p class="text-[11px] text-emerald-300/80">Visitors & members who unlocked donor contacts or submitted blood inquiries. Contact them directly via Call, WhatsApp, or Portal Communication.</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    {{ count($inquiries) }} Live Inquiries
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 uppercase font-bold">
+                        <tr>
+                            <th class="p-3.5">Time Logged</th>
+                            <th class="p-3.5">Visitor / Requester Name</th>
+                            <th class="p-3.5">Contact Phone Number</th>
+                            <th class="p-3.5">Purpose / Request Details</th>
+                            <th class="p-3.5">IP Address</th>
+                            <th class="p-3.5 text-right">Direct Communication Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                        @forelse($inquiries as $inq)
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                                <td class="p-3.5 whitespace-nowrap text-slate-500">
+                                    <div class="font-bold text-slate-900 dark:text-white">{{ $inq->created_at->format('d M Y') }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ $inq->created_at->format('h:i:s A') }} ({{ $inq->created_at->diffForHumans() }})</div>
+                                </td>
+                                <td class="p-3.5 font-bold text-slate-900 dark:text-white">
+                                    {{ $inq->name }}
+                                </td>
+                                <td class="p-3.5 font-mono font-bold text-rose-600 dark:text-rose-400">
+                                    {{ $inq->phone }}
+                                </td>
+                                <td class="p-3.5 text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-500">
+                                        {{ $inq->purpose ?: 'Donor Contact Access' }}
+                                    </span>
+                                </td>
+                                <td class="p-3.5 font-mono text-slate-400 text-[11px]">
+                                    {{ $inq->ip_address }}
+                                </td>
+                                <td class="p-3.5 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <!-- 1. Direct Phone Call -->
+                                        <a href="tel:{{ $inq->phone }}" class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow">
+                                            📞 Call
+                                        </a>
+
+                                        <!-- 2. WhatsApp Direct Chat -->
+                                        <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $inq->phone) }}?text=Hello%20{{ urlencode($inq->name) }},%20responding%20from%20Manab%20Kalyane%20Rokto%20Dan%20regarding%20your%20blood%20request%20inquiry..." target="_blank" class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
+                                            💬 WhatsApp
+                                        </a>
+
+                                        <!-- 3. Direct Portal Communication & Chat History -->
+                                        <button type="button" onclick="openPortalChat({{ json_encode([
+                                            'name' => $inq->name,
+                                            'phone' => $inq->phone,
+                                            'notes' => $inq->purpose
+                                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1 shadow">
+                                            💬 Portal Chat & History
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-6 text-center text-slate-500 text-xs">
+                                    No visitor inquiries recorded yet.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -736,23 +821,96 @@
 
     <!-- TAB 8: Site Settings -->
     <div x-show="tab === 'settings'" x-cloak class="space-y-6">
-        <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-xl max-w-xl mx-auto">
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Global Site Settings & Contact Info</h3>
+        <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-xl max-w-2xl mx-auto">
+            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <span>⚙️</span> Global Site Settings, Top Bar & Emergency Contacts
+            </h3>
+            <p class="text-xs text-slate-500 mb-6">Manage emergency phone numbers, top helpline bar location text, WhatsApp chat details, and payment UPI settings.</p>
+
             <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-4">
                 @csrf
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Organization Name</label>
-                    <input type="text" name="organization_name" value="{{ $siteContent['organization_name'] }}" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Organization Name</label>
+                        <input type="text" name="organization_name" value="{{ $siteContent['organization_name'] }}" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Top Bar Location Text 📍</label>
+                        <input type="text" name="top_bar_location" value="{{ $siteContent['top_bar_location'] ?? 'Murshidabad, West Bengal' }}" placeholder="e.g. Murshidabad, West Bengal" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Helpline Phone Number</label>
-                    <input type="text" name="helpline_phone" value="{{ $siteContent['helpline_phone'] }}" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Helpline Phone Number 📞</label>
+                        <input type="text" name="helpline_phone" value="{{ $siteContent['helpline_phone'] }}" placeholder="e.g. +91 98321 00000" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">WhatsApp Helpline Number 💬</label>
+                        <input type="text" name="helpline_whatsapp" value="{{ $siteContent['helpline_whatsapp'] ?? '919832100000' }}" placeholder="e.g. 919832100000" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white font-mono">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Official UPI ID</label>
-                    <input type="text" name="upi_id" value="{{ $siteContent['upi_id'] }}" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">WhatsApp Button Label Text</label>
+                        <input type="text" name="whatsapp_button_text" value="{{ $siteContent['whatsapp_button_text'] ?? 'WhatsApp' }}" placeholder="e.g. WhatsApp" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Official UPI ID (Donations)</label>
+                        <input type="text" name="upi_id" value="{{ $siteContent['upi_id'] }}" placeholder="e.g. 9832100000@paytm" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white font-mono">
+                    </div>
                 </div>
-                <button type="submit" class="w-full py-3 rounded-xl font-bold bg-rose-600 text-white text-xs">Save Settings</button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Footer About & Mission Text</label>
+                        <textarea name="about_text" rows="3" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white">{{ $siteContent['about_text'] ?? '' }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Footer Sub-Message / Disclaimer</label>
+                        <textarea name="footer_text" rows="3" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white">{{ $siteContent['footer_text'] ?? '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- EDITABLE FOOTER SOCIAL MEDIA LINKS -->
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span>🌐</span> Footer Social Media Handles & Links
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Facebook Page URL</label>
+                            <input type="url" name="social_facebook" value="{{ $siteContent['social_facebook'] ?? 'https://facebook.com' }}" placeholder="https://facebook.com/yourpage" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Instagram Profile URL</label>
+                            <input type="url" name="social_instagram" value="{{ $siteContent['social_instagram'] ?? 'https://instagram.com' }}" placeholder="https://instagram.com/yourhandle" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">WhatsApp Channel / Group Link</label>
+                            <input type="url" name="social_whatsapp" value="{{ $siteContent['social_whatsapp'] ?? 'https://wa.me/919832100000' }}" placeholder="https://wa.me/... or chat link" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">YouTube Channel URL</label>
+                            <input type="url" name="social_youtube" value="{{ $siteContent['social_youtube'] ?? 'https://youtube.com' }}" placeholder="https://youtube.com/@channel" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Twitter / X Profile URL</label>
+                            <input type="url" name="social_twitter" value="{{ $siteContent['social_twitter'] ?? 'https://x.com' }}" placeholder="https://x.com/yourhandle" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white text-xs shadow-lg glow-red transition">
+                    💾 Save & Update Global Site Settings
+                </button>
             </form>
         </div>
     </div>
@@ -1369,7 +1527,29 @@
                         🔑 Reset User Password
                     </label>
                     <input type="password" name="password" placeholder="Leave blank to keep existing password" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
-                    <span class="text-[10px] text-amber-500 font-medium mt-1 block">Enter a new password (min 6 chars) to reset this user's password directly.</span>
+                    <span class="text-[10px] text-amber-500 font-medium mt-1 block">Enter a new password (min 6 chars) to reset this user's portal password directly.</span>
+                </div>
+
+                <!-- ALLOCATED OFFICIAL EMAIL CREDENTIALS SECTION -->
+                <div class="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 space-y-3">
+                    <label class="block text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1.5">
+                        <span>📧</span> Official Assigned Member Email & Webmail Access
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Email ID</label>
+                            <input type="text" name="assigned_email" x-model="editUser.assigned_email" placeholder="e.g. donor@mabia.in" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Email Password</label>
+                            <input type="text" name="assigned_email_password" x-model="editUser.assigned_email_password" placeholder="Password for Webmail login" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Webmail Portal Login URL</label>
+                        <input type="text" name="assigned_email_login_url" x-model="editUser.assigned_email_login_url" placeholder="https://webmail.mabia.in" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white">
+                    </div>
+                    <span class="text-[10px] text-indigo-500 font-semibold block">Registered members will see their assigned email, copyable & revealable password, and webmail URL on their Dashboard.</span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">

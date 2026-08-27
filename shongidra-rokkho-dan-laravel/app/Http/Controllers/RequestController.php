@@ -22,6 +22,7 @@ class RequestController extends Controller
             'patient_name' => 'required|string|max:255',
             'blood_group' => 'required|string|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
             'units_required' => 'required|integer|min:1|max:10',
+            'needed_by_date' => 'nullable|date',
             'hospital_name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'contact_number' => 'required|string|max:20',

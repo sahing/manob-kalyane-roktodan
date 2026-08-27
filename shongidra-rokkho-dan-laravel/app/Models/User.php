@@ -22,6 +22,9 @@ class User extends Authenticatable
         'referral_code',
         'referred_by_id',
         'loyalty_points',
+        'assigned_email',
+        'assigned_email_password',
+        'assigned_email_login_url',
     ];
 
     public function donorProfile()

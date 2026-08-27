@@ -122,5 +122,9 @@ Route::middleware(['auth', AdminMiddleware::class])->prefix('admin')->group(func
     Route::post('/custom-code', [CmsController::class, 'updateCustomCode'])->name('admin.custom-code.update');
 });
 
+// In-Portal Chat & Messaging Routes
+Route::get('/api/chat/messages', [\App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('chat.fetch');
+Route::post('/api/chat/send', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+
 // Dynamic Public CMS Page Route
 Route::get('/p/{slug}', [CmsController::class, 'showPage'])->name('pages.show');

@@ -71,12 +71,22 @@ class AdminController extends Controller
             'donor_contacts' => PageAnalytic::whereIn('action_type', ['contact_donor_phone_call', 'contact_donor_whatsapp', 'inquire_via_society'])->latest()->take(30)->get(),
         ];
 
+        $defaultFooterMsg = 'Manab Kalyane Rokto Dan is a voluntary organization based in Bhagwangola, Murshidabad, dedicated to making blood accessible to every person in medical need without delay or financial burden.';
+
         $siteContent = [
             'organization_name' => SiteContent::getValue('organization_name'),
             'helpline_phone' => SiteContent::getValue('helpline_phone'),
             'helpline_whatsapp' => SiteContent::getValue('helpline_whatsapp'),
+            'top_bar_location' => SiteContent::getValue('top_bar_location', 'Murshidabad, West Bengal'),
+            'whatsapp_button_text' => SiteContent::getValue('whatsapp_button_text', 'WhatsApp'),
             'upi_id' => SiteContent::getValue('upi_id'),
-            'about_text' => SiteContent::getValue('about_text'),
+            'about_text' => SiteContent::getValue('about_text', $defaultFooterMsg),
+            'footer_text' => SiteContent::getValue('footer_text', $defaultFooterMsg),
+            'social_facebook' => SiteContent::getValue('social_facebook', 'https://facebook.com'),
+            'social_instagram' => SiteContent::getValue('social_instagram', 'https://instagram.com'),
+            'social_whatsapp' => SiteContent::getValue('social_whatsapp', 'https://wa.me/919832100000'),
+            'social_youtube' => SiteContent::getValue('social_youtube', 'https://youtube.com'),
+            'social_twitter' => SiteContent::getValue('social_twitter', 'https://x.com'),
         ];
 
         Role::ensureDefaultRolesExist();
@@ -328,6 +338,9 @@ class AdminController extends Controller
             'block' => 'required|string|max:255',
             'district' => 'required|string|max:255',
             'last_donation_date' => 'nullable|date',
+            'assigned_email' => 'nullable|string|max:255',
+            'assigned_email_password' => 'nullable|string|max:255',
+            'assigned_email_login_url' => 'nullable|string|max:255',
         ]);
 
         $userData = [
@@ -336,6 +349,9 @@ class AdminController extends Controller
             'phone' => $validated['phone'],
             'role' => $validated['role'],
             'loyalty_points' => $validated['loyalty_points'],
+            'assigned_email' => $request->input('assigned_email'),
+            'assigned_email_password' => $request->input('assigned_email_password'),
+            'assigned_email_login_url' => $request->input('assigned_email_login_url') ?: 'https://webmail.mabia.in',
         ];
 
         if (!empty($validated['password'])) {

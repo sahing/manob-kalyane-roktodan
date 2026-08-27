@@ -53,24 +53,46 @@
                     </div>
 
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ $req->patient_name }}</h3>
-                    <p class="text-xs text-slate-700 dark:text-slate-300 mb-2">Hospital: <strong class="text-slate-900 dark:text-white">{{ $req->hospital_name }}</strong></p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Location: {{ $req->location }}</p>
+                    <p class="text-xs text-slate-700 dark:text-slate-300 mb-1">Hospital: <strong class="text-slate-900 dark:text-white">{{ $req->hospital_name }}</strong></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Location: {{ $req->location }}</p>
+
+                    <!-- REQUIREMENT DATE BADGE -->
+                    <div class="mb-4 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 uppercase">
+                            <span>📅</span> Requirement Date:
+                        </span>
+                        <span class="text-xs font-extrabold text-slate-900 dark:text-white font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                            {{ $req->needed_by_date ? $req->needed_by_date->format('d M Y') : $req->created_at->format('d M Y') }}
+                        </span>
+                    </div>
 
                     @if($req->notes)
                         <p class="text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800 mb-4">
                             "{{ $req->notes }}"
                         </p>
                     @endif
-                </div>
-
-                <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <a href="tel:{{ $req->contact_number }}" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-md">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                            Call {{ $req->contact_number }}
+                </div>                <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                        <button type="button" onclick="openPortalChat({{ json_encode([
+                            'requestId' => $req->id,
+                            'patientName' => $req->patient_name,
+                            'bloodGroup' => $req->blood_group,
+                            'units' => $req->units_required,
+                            'hospital' => $req->hospital_name,
+                            'location' => $req->location,
+                            'phone' => $req->contact_number,
+                            'notes' => $req->notes ?? ''
+                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center gap-1 shadow-md">
+                            👁️ View Details & Portal Chat
+                        </button>
+                        <a href="tel:{{ $req->contact_number }}" class="px-2.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow-md">
+                            📞 Call
                         </a>
-                        <a href="https://wa.me/?text={{ urlencode('*EMERGENCY BLOOD REQUIRED* %0A*Patient:* ' . $req->patient_name . ' %0A*Blood Group:* ' . $req->blood_group . ' (' . $req->units_required . ' units) %0A*Hospital:* ' . $req->hospital_name . ', ' . $req->location . ' %0A*Contact:* ' . $req->contact_number) }}" target="_blank" class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
-                            Share on WA
+                        <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $req->contact_number) }}?text=Hello,%20responding%20from%20Manab%20Kalyane%20Rokto%20Dan%20regarding%20your%20emergency%20blood%20request%20for%20{{ urlencode($req->patient_name) }}%20({{ urlencode($req->blood_group) }})" target="_blank" class="px-2.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
+                            💬 WA
+                        </a>
+                        <a href="https://wa.me/?text={{ urlencode('*EMERGENCY BLOOD REQUIRED* %0A*Patient:* ' . $req->patient_name . ' %0A*Blood Group:* ' . $req->blood_group . ' (' . $req->units_required . ' units) %0A*Hospital:* ' . $req->hospital_name . ', ' . $req->location . ' %0A*Contact:* ' . $req->contact_number) }}" target="_blank" class="px-2 py-2 rounded-xl text-xs font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition" title="Broadcast Request to Groups">
+                            📢
                         </a>
                     </div>
                 </div>
@@ -85,12 +107,13 @@
     <!-- Active Requests: LIST VIEW MODE -->
     <div x-show="viewMode === 'list'" x-cloak class="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-12 shadow-xl">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-800">
+            <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300 divide-y divide-slate-200 dark:border-slate-800">
                 <thead class="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-bold">
                     <tr>
                         <th class="p-4">Blood Group</th>
                         <th class="p-4">Patient Name</th>
                         <th class="p-4">Units Needed</th>
+                        <th class="p-4">Date of Requirement</th>
                         <th class="p-4">Hospital & Location</th>
                         <th class="p-4">Posted Date</th>
                         <th class="p-4 text-right">Actions</th>
@@ -114,6 +137,11 @@
                                 {{ $req->units_required }} Unit(s)
                             </td>
                             <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-mono inline-block">
+                                    📅 {{ $req->needed_by_date ? $req->needed_by_date->format('d M Y') : $req->created_at->format('d M Y') }}
+                                </span>
+                            </td>
+                            <td class="p-4">
                                 <span class="font-semibold text-slate-900 dark:text-white block">{{ $req->hospital_name }}</span>
                                 <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ $req->location }}</span>
                             </td>
@@ -121,12 +149,27 @@
                                 {{ $req->created_at->diffForHumans() }}
                             </td>
                             <td class="p-4 text-right">
-                                <div class="inline-flex items-center space-x-2">
-                                    <a href="tel:{{ $req->contact_number }}" class="px-3 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1">
-                                        Call
+                                <div class="inline-flex items-center space-x-1.5">
+                                    <button type="button" onclick="openPortalChat({{ json_encode([
+                                        'requestId' => $req->id,
+                                        'patientName' => $req->patient_name,
+                                        'bloodGroup' => $req->blood_group,
+                                        'units' => $req->units_required,
+                                        'hospital' => $req->hospital_name,
+                                        'location' => $req->location,
+                                        'phone' => $req->contact_number,
+                                        'notes' => $req->notes ?? ''
+                                    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center gap-1 shadow">
+                                        👁️ View Details & Chat
+                                    </button>            </button>
+                                    <a href="tel:{{ $req->contact_number }}" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1">
+                                        📞 Call
                                     </a>
-                                    <a href="https://wa.me/?text={{ urlencode('*EMERGENCY BLOOD REQUIRED* %0A*Patient:* ' . $req->patient_name . ' %0A*Blood Group:* ' . $req->blood_group . ' (' . $req->units_required . ' units) %0A*Hospital:* ' . $req->hospital_name . ', ' . $req->location . ' %0A*Contact:* ' . $req->contact_number) }}" target="_blank" class="px-3 py-2 rounded-lg text-xs font-bold bg-slate-200 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
-                                        Share WA
+                                    <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $req->contact_number) }}?text=Hello,%20responding%20from%20Manab%20Kalyane%20Rokto%20Dan%20regarding%20your%20emergency%20blood%20request%20for%20{{ urlencode($req->patient_name) }}%20({{ urlencode($req->blood_group) }})" target="_blank" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
+                                        💬 WA
+                                    </a>
+                                    <a href="https://wa.me/?text={{ urlencode('*EMERGENCY BLOOD REQUIRED* %0A*Patient:* ' . $req->patient_name . ' %0A*Blood Group:* ' . $req->blood_group . ' (' . $req->units_required . ' units) %0A*Hospital:* ' . $req->hospital_name . ', ' . $req->location . ' %0A*Contact:* ' . $req->contact_number) }}" target="_blank" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 transition">
+                                        📢 Share
                                     </a>
                                 </div>
                             </td>
@@ -174,9 +217,14 @@
                         <input type="number" name="units_required" value="1" min="1" max="10" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Contact Number</label>
-                        <input type="tel" name="contact_number" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Requirement Date (Date Needed)</label>
+                        <input type="date" name="needed_by_date" value="{{ date('Y-m-d') }}" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-bold">
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Contact Phone Number</label>
+                    <input type="tel" name="contact_number" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                 </div>
 
                 <div>

@@ -3,10 +3,10 @@
 @section('title', 'Edit Profile — Manab Kalyane Rokto Dan')
 
 @section('content')
-<div class="max-w-2xl mx-auto px-4 py-10">
-    <div class="glass-card p-8 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xl">
-        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">Edit Donor Profile & Privacy</h1>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mb-6">Keep your contact details, availability, and privacy preferences up-to-date.</p>
+<div class="max-w-2xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+    <div class="glass-card p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-slate-300 dark:border-slate-800 shadow-xl">
+        <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-1 leading-tight">Edit Donor Profile & Privacy</h1>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mb-5">Keep your contact details, availability, and privacy preferences up-to-date.</p>
 
         <form action="{{ route('dashboard.profile.update') }}" method="POST" class="space-y-4" x-data="{ avatarUrl: '{{ old('avatar_url', $user->avatar_url) }}' }">
             @csrf
@@ -82,6 +82,52 @@
                         @endforeach
                     </select>
                 </div>
+            </div>
+
+            <!-- OFFICIAL ASSIGNED MEMBER EMAIL CREDENTIALS BOX -->
+            <div class="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 space-y-3" x-data="{ showPass: false, passCopied: false, emailCopied: false }">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold uppercase text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                        <span>📧</span> Official Assigned Member Email Credentials
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-500">Read-Only</span>
+                </div>
+
+                @if(!empty($user->assigned_email))
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block mb-1">Allocated Email ID</span>
+                            <div class="flex items-center justify-between gap-1.5 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                                <span class="text-xs font-mono font-bold text-white truncate">{{ $user->assigned_email }}</span>
+                                <button type="button" @click="navigator.clipboard.writeText('{{ $user->assigned_email }}'); emailCopied = true; setTimeout(() => emailCopied = false, 2500)" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 shrink-0">
+                                    <span x-text="emailCopied ? '✓ Copied' : '📋 Copy'"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block mb-1">Webmail Password</span>
+                            <div class="flex items-center justify-between gap-1.5 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                                <span class="text-xs font-mono font-bold text-amber-400" x-text="showPass ? '{{ $user->assigned_email_password }}' : '••••••••••••'"></span>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" @click="showPass = !showPass" class="text-[10px] text-slate-400 hover:text-white">
+                                        <span x-text="showPass ? '🙈' : '👁️'"></span>
+                                    </button>
+                                    <button type="button" @click="navigator.clipboard.writeText('{{ $user->assigned_email_password }}'); passCopied = true; setTimeout(() => passCopied = false, 2500)" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300">
+                                        <span x-text="passCopied ? '✓ Copied' : '📋 Copy'"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-1">
+                        <a href="{{ $user->assigned_email_login_url ?: 'https://webmail.mabia.in' }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-extrabold text-indigo-400 hover:text-indigo-300 underline">
+                            🚀 Login to Official Webmail Portal ({{ $user->assigned_email_login_url ?: 'https://webmail.mabia.in' }}) ➔
+                        </a>
+                    </div>
+                @else
+                    <p class="text-xs text-slate-500 italic">Your assigned official member email address will be provided by the admin team soon.</p>
+                @endif
             </div>
 
             <!-- PRIVACY CONTROL BOX -->

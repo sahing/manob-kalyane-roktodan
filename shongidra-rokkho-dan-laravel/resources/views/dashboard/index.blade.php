@@ -3,36 +3,36 @@
 @section('title', 'Donor Dashboard — Manab Kalyane Rokto Dan')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ storyModal: false, copied: false }">
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div class="flex items-center gap-3">
+<div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10" x-data="{ storyModal: false, copied: false }">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div class="flex items-center gap-3 min-w-0">
             @if($user->avatar_url)
-                <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-rose-500 shadow-md">
+                <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-rose-500 shadow-md shrink-0">
             @else
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-rose-600 text-white font-extrabold text-xl flex items-center justify-center border-2 border-slate-300 dark:border-slate-700 shadow-md">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-rose-600 text-white font-extrabold text-lg sm:text-xl flex items-center justify-center border-2 border-slate-300 dark:border-slate-700 shadow-md shrink-0">
                     {{ $user->donorProfile?->blood_group ?: substr($user->name, 0, 1) }}
                 </div>
             @endif
-            <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome, {{ $user->name }}</h1>
-                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Role: <span class="uppercase font-bold text-rose-600 dark:text-rose-400">{{ $user->role }}</span> | Phone: {{ $user->phone }}</p>
+            <div class="min-w-0">
+                <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">Welcome, {{ $user->name }}</h1>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">Role: <span class="uppercase font-bold text-rose-600 dark:text-rose-400">{{ $user->role }}</span> | Phone: {{ $user->phone }}</p>
             </div>
         </div>
-        <div class="flex items-center space-x-3">
-            <button @click="storyModal = true" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition flex items-center gap-1.5">
+        <div class="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+            <button @click="storyModal = true" class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition flex items-center gap-1.5">
                 ✍️ Share Experience & Photo
             </button>
-            <a href="{{ route('dashboard.card') }}" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-rose-600 dark:text-rose-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+            <a href="{{ route('dashboard.card') }}" class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-rose-600 dark:text-rose-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                 🪪 Digital Donor Card
             </a>
-            <a href="{{ route('dashboard.profile') }}" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+            <a href="{{ route('dashboard.profile') }}" class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                 Edit Profile
             </a>
         </div>
     </div>
 
     <!-- Loyalty Rewards & Referral Hub -->
-    <div class="glass-card p-6 rounded-2xl mb-8 bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border border-rose-500/30 text-white shadow-2xl">
+    <div class="glass-card p-4 sm:p-6 rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 border border-rose-500/30 text-white shadow-2xl">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             
             <!-- Points & Rank Badge -->
@@ -177,6 +177,70 @@
             <button @click="storyModal = true" class="px-5 py-2.5 rounded-xl font-extrabold text-xs bg-rose-600 hover:bg-rose-500 text-white transition shadow-md whitespace-nowrap">
                 + Write Story & Upload Photo
             </button>
+        </div>
+    </div>
+
+    <!-- Official Member Assigned Email & Credentials Hub -->
+    <div class="glass-card p-6 sm:p-8 rounded-3xl mb-8 border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-slate-950 text-white shadow-2xl relative overflow-hidden" x-data="{ showPass: false, passCopied: false, emailCopied: false }">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-xl">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 uppercase tracking-wider">
+                        Official Member Access
+                    </span>
+                    <span class="text-xs text-slate-400 font-semibold">• Exclusive to Registered Donors</span>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                    <span>📧</span> Official Member Webmail Credentials
+                </h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Access your assigned official organization email mailbox to stay informed about emergency blood donation calls, donor verification, and official society announcements.
+                </p>
+            </div>
+
+            @if(!empty($user->assigned_email))
+                <div class="p-4 rounded-2xl bg-slate-950/80 border border-indigo-500/30 space-y-3 min-w-[280px]">
+                    <!-- Assigned Email -->
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase text-indigo-400 tracking-wider block mb-1">Allocated Email ID</span>
+                        <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                            <span class="text-xs font-mono font-bold text-white truncate">{{ $user->assigned_email }}</span>
+                            <button @click="navigator.clipboard.writeText('{{ $user->assigned_email }}'); emailCopied = true; setTimeout(() => emailCopied = false, 2500)" class="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 shrink-0">
+                                <span x-text="emailCopied ? '✓ Copied' : '📋 Copy'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Webmail Password -->
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase text-indigo-400 tracking-wider block mb-1">Webmail Access Password</span>
+                        <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                            <span class="text-xs font-mono font-bold text-amber-400" x-text="showPass ? '{{ $user->assigned_email_password }}' : '••••••••••••'"></span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button @click="showPass = !showPass" class="text-xs text-slate-400 hover:text-white" :title="showPass ? 'Hide Password' : 'Reveal Password'">
+                                    <span x-text="showPass ? '🙈 Hide' : '👁️ Reveal'"></span>
+                                </button>
+                                <button @click="navigator.clipboard.writeText('{{ $user->assigned_email_password }}'); passCopied = true; setTimeout(() => passCopied = false, 2500)" class="text-[11px] font-bold text-emerald-400 hover:text-emerald-300">
+                                    <span x-text="passCopied ? '✓ Copied' : '📋 Copy'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Login Button -->
+                    <a href="{{ $user->assigned_email_login_url ?: 'https://webmail.mabia.in' }}" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-2.5 rounded-xl font-extrabold text-xs bg-gradient-to-r from-indigo-600 to-rose-600 text-white hover:opacity-95 transition shadow-lg glow-red">
+                        🚀 Open Webmail Portal Login ➔
+                    </a>
+                </div>
+            @else
+                <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-center space-y-2 max-w-sm">
+                    <span class="text-2xl block">⏳</span>
+                    <h4 class="text-xs font-extrabold text-white uppercase">Official Email Pending Allocation</h4>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Your official donor member email and webmail login credentials will be assigned by the administrator shortly.
+                    </p>
+                </div>
+            @endif
         </div>
     </div>
 

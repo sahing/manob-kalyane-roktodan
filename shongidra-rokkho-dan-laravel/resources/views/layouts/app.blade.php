@@ -8,7 +8,20 @@
         $cmsCustomCss = \App\Models\SiteContent::getValue('custom_css');
         $cmsEnableCss = \App\Models\SiteContent::getValue('enable_custom_css', '1');
         $cmsOrganizationName = \App\Models\SiteContent::getValue('organization_name', 'Manab Kalyane Rokto Dan');
+        $cmsTagline = \App\Models\SiteContent::getValue('site_tagline', 'Bhagwangola Voluntary Society');
         $cmsHelplinePhone = \App\Models\SiteContent::getValue('helpline_phone', '+91 98321 00000');
+        $cmsHelplineWhatsapp = \App\Models\SiteContent::getValue('helpline_whatsapp', '919832100000');
+        $cmsTopBarLocation = \App\Models\SiteContent::getValue('top_bar_location', 'Murshidabad, West Bengal');
+        $cmsWhatsappBtnText = \App\Models\SiteContent::getValue('whatsapp_button_text', 'WhatsApp');
+        $cmsUpiId = \App\Models\SiteContent::getValue('upi_id', 'manobkalyan@upi');
+        $defaultFooterMsg = 'Manab Kalyane Rokto Dan is a voluntary organization based in Bhagwangola, Murshidabad, dedicated to making blood accessible to every person in medical need without delay or financial burden.';
+        $cmsAboutText = \App\Models\SiteContent::getValue('about_text', $defaultFooterMsg);
+        $cmsFooterText = \App\Models\SiteContent::getValue('footer_text', $defaultFooterMsg);
+        $cmsSocialFacebook = \App\Models\SiteContent::getValue('social_facebook', 'https://facebook.com');
+        $cmsSocialInstagram = \App\Models\SiteContent::getValue('social_instagram', 'https://instagram.com');
+        $cmsSocialWhatsapp = \App\Models\SiteContent::getValue('social_whatsapp', 'https://wa.me/919832100000');
+        $cmsSocialYoutube = \App\Models\SiteContent::getValue('social_youtube', 'https://youtube.com');
+        $cmsSocialTwitter = \App\Models\SiteContent::getValue('social_twitter', 'https://x.com');
         
         $headerMenuItems = \App\Models\SiteMenuItem::where('location', 'header')
             ->where('is_active', true)
@@ -190,28 +203,83 @@
         .ts-control input {
             color: inherit !important;
         }
+
+        /* Micro-Screen (< 320px / <= 268px) Ultra Fluid Font Scaling & Overflow Safeguard */
+        @media (max-width: 320px) {
+            html {
+                font-size: 13px !important;
+            }
+            body {
+                overflow-x: hidden !important;
+                word-break: break-word !important;
+            }
+            .font-heading, header h1, header span {
+                font-size: clamp(0.7rem, 4vw, 0.95rem) !important;
+            }
+            h1 {
+                font-size: clamp(0.95rem, 5.5vw, 1.35rem) !important;
+            }
+            h2 {
+                font-size: clamp(0.85rem, 4.5vw, 1.15rem) !important;
+            }
+            .text-xs {
+                font-size: clamp(0.625rem, 3.2vw, 0.75rem) !important;
+            }
+            .px-4, .px-3 {
+                padding-left: 0.35rem !important;
+                padding-right: 0.35rem !important;
+            }
+        }
+
+        @media (max-width: 270px) {
+            html {
+                font-size: 11px !important;
+            }
+            .font-heading, header span {
+                font-size: clamp(0.6rem, 3.8vw, 0.8rem) !important;
+            }
+            h1 {
+                font-size: clamp(0.85rem, 5vw, 1.1rem) !important;
+            }
+            .text-xs, button, a {
+                font-size: 0.625rem !important;
+                padding-left: 0.25rem !important;
+                padding-right: 0.25rem !important;
+            }
+            /* Hide Brand Text below 268px screen width and display on hover via Tooltip */
+            .brand-text-container {
+                display: none !important;
+            }
+            .brand-micro-tooltip {
+                display: none;
+            }
+            .group:hover .brand-micro-tooltip, .group:focus .brand-micro-tooltip {
+                display: block !important;
+            }
+        }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{ authModal: false, authMode: 'login', shareOpen: false, mobileMenu: false }">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{ authModal: false, authMode: 'login', shareOpen: false, mobileMenu: false, chatModalOpen: false, chatState: { requestId: null, phone: '', name: '', patientName: '', bloodGroup: '', hospital: '', location: '', notes: '', units: 1, messages: [], newMsg: '', loading: false } }">
 
     <!-- Top Helpline Bar -->
-    <div class="bg-gradient-to-r from-rose-900 via-slate-900 to-rose-950 dark:from-brand-950 dark:via-slate-900 dark:to-brand-950 text-white text-xs py-2 px-4 shadow-sm relative z-50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center text-slate-100">
-            <div class="flex items-center space-x-4">
-                <span class="flex items-center space-x-1 font-semibold">
-                    <svg class="w-3.5 h-3.5 text-rose-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                    <span>Bhagwangola 24/7 Helpline: <a href="tel:+919832100000" class="text-white hover:text-rose-300 font-extrabold">+91 98321 00000</a></span>
+    <div class="bg-gradient-to-r from-rose-900 via-slate-900 to-rose-950 dark:from-brand-950 dark:via-slate-900 dark:to-brand-950 text-white text-xs py-2 px-3 sm:px-6 lg:px-8 shadow-sm relative z-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto flex justify-between items-center text-slate-100 gap-2">
+            <div class="flex items-center space-x-2 sm:space-x-4 min-w-0 truncate">
+                <span class="flex items-center space-x-1 font-bold text-[11px] sm:text-xs truncate">
+                    <svg class="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <span class="truncate">Helpline: <a href="tel:{{ preg_replace('/[^0-9+]/', '', $cmsHelplinePhone) }}" class="text-white hover:text-rose-300 font-extrabold">{{ $cmsHelplinePhone }}</a></span>
                 </span>
                 <span class="hidden md:inline-block text-slate-400">|</span>
-                <span class="hidden md:inline-flex items-center space-x-1">
+                <span class="hidden md:inline-flex items-center space-x-1 text-xs font-medium">
                     <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <span>Murshidabad, West Bengal</span>
+                    <span>{{ $cmsTopBarLocation }}</span>
                 </span>
             </div>
 
-            <div class="flex items-center space-x-3">
-                <a href="https://wa.me/919832100000?text=Emergency%20Blood%20Help" target="_blank" class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition text-[11px] font-semibold">
-                    <span>WhatsApp Helpline</span>
+            <div class="flex items-center space-x-2 shrink-0">
+                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $cmsHelplineWhatsapp ?: $cmsHelplinePhone) }}?text=Emergency%20Blood%20Help" target="_blank" class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition text-[11px] font-bold whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5 fill-current text-emerald-400 shrink-0" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>{{ $cmsWhatsappBtnText }}</span>
                 </a>
             </div>
         </div>
@@ -219,28 +287,33 @@
 
     <!-- Main Navigation Header -->
     <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 gap-2">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-1.5 sm:gap-2">
                 
                 <!-- Brand Logo -->
-                <a href="{{ route('home') }}" class="flex items-center space-x-2.5 shrink-0 group">
+                <a href="{{ route('home') }}" class="flex items-center space-x-2.5 shrink-0 group relative" title="{{ $cmsOrganizationName }} — {{ $cmsTagline }}">
                     @if($cmsLogo)
-                        <img src="{{ $cmsLogo }}" alt="{{ $cmsOrganizationName }}" class="h-9 w-auto object-contain transition duration-300 group-hover:scale-105" :class="{ 'hidden': darkMode && '{{ $cmsDarkLogo }}' !== '' }">
+                        <img src="{{ $cmsLogo }}" alt="{{ $cmsOrganizationName }}" class="h-8 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 shrink-0" :class="{ 'hidden': darkMode && '{{ $cmsDarkLogo }}' !== '' }">
                         @if($cmsDarkLogo)
-                            <img src="{{ $cmsDarkLogo }}" alt="{{ $cmsOrganizationName }}" class="h-9 w-auto object-contain transition duration-300 group-hover:scale-105 hidden" :class="{ 'hidden': !darkMode }">
+                            <img src="{{ $cmsDarkLogo }}" alt="{{ $cmsOrganizationName }}" class="h-8 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 hidden shrink-0" :class="{ 'hidden': !darkMode }">
                         @endif
                     @else
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-rose-600 to-rose-500 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition duration-300 glow-red shrink-0">
-                            <svg class="w-5 h-5 fill-current animate-heartbeat" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-rose-600 to-rose-500 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition duration-300 glow-red shrink-0">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current animate-heartbeat" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
                         </div>
                     @endif
-                    <div class="leading-tight">
-                        <span class="font-heading font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors block whitespace-nowrap">
+                    <div class="leading-tight brand-text-container">
+                        <span class="font-heading font-black text-sm sm:text-base lg:text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors block whitespace-nowrap">
                             {{ $cmsOrganizationName }}
                         </span>
-                        <span class="text-[9px] uppercase font-bold tracking-widest text-rose-600 dark:text-rose-400 block whitespace-nowrap">
-                            Bhagwangola Voluntary Society
+                        <span class="text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider text-rose-600 dark:text-rose-400 hidden sm:block whitespace-nowrap">
+                            {{ $cmsTagline }}
                         </span>
+                    </div>
+
+                    <!-- Micro-screen Hover Tooltip (< 268px width) -->
+                    <div class="brand-micro-tooltip hidden absolute left-0 top-full mt-1.5 w-max max-w-[200px] p-2 rounded-xl bg-slate-900 text-white text-[10px] font-extrabold shadow-2xl border border-slate-700 z-50 pointer-events-none leading-tight">
+                        {{ $cmsOrganizationName }}
                     </div>
                 </a>
 
@@ -282,9 +355,9 @@
                 </nav>
 
                 <!-- Auth, Theme Toggle & Mobile Hamburger -->
-                <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+                <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
                     <!-- Light / Dark Theme Switch Button -->
-                    <button @click="darkMode = !darkMode" type="button" class="p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1 text-xs font-bold shadow-sm" title="Toggle Light or Dark Theme">
+                    <button @click="darkMode = !darkMode" type="button" class="p-1.5 sm:p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1 text-xs font-bold shadow-sm" title="Toggle Light or Dark Theme">
                         <template x-if="darkMode">
                             <span class="flex items-center gap-1 text-amber-300">
                                 <span>☀️</span> <span class="hidden sm:inline text-xs font-bold text-amber-200">Light</span>
@@ -305,7 +378,7 @@
                         @endphp
                         
                         <!-- Notifications Bell Icon -->
-                        <a href="{{ route('dashboard') }}" class="relative p-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Notifications">
+                        <a href="{{ route('dashboard') }}" class="relative p-1.5 sm:p-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Notifications">
                             <span class="text-sm">🔔</span>
                             @if($unreadCount > 0)
                                 <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-extrabold flex items-center justify-center animate-bounce">
@@ -314,21 +387,15 @@
                             @endif
                         </a>
 
-                        <!-- USER PROFILE & ADMIN ACCOUNT DROPDOWN -->
+                        <!-- USER PROFILE & ADMIN ACCOUNT DROPDOWN (ICON-ONLY FOR MAX SPACE) -->
                         <div class="relative" x-data="{ userDropdown: false }" @click.outside="userDropdown = false">
-                            <button @click="userDropdown = !userDropdown" type="button" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-1.5 sm:gap-2 shadow-sm">
+                            <button @click="userDropdown = !userDropdown" type="button" class="p-1 sm:p-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-1 shadow-sm" title="{{ $user->name }} ({{ $user->role }})">
                                 @if($user->avatar_url)
-                                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-6 h-6 rounded-lg object-cover shrink-0 border border-rose-500/50">
+                                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover shrink-0 border border-rose-500/50">
                                 @else
-                                    <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-brand-700 to-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center uppercase shrink-0">
+                                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-tr from-brand-700 to-rose-500 text-white text-[11px] font-extrabold flex items-center justify-center uppercase shrink-0 shadow-sm">
                                         {{ $bloodGroup ?: substr($user->name, 0, 1) }}
                                     </div>
-                                @endif
-                                <span class="max-w-[80px] sm:max-w-[100px] truncate hidden sm:inline font-extrabold">{{ $user->name }}</span>
-                                @if($user->isAdmin())
-                                    <span class="hidden md:inline-block px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 uppercase">
-                                        Admin
-                                    </span>
                                 @endif
                                 <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" :class="{ 'rotate-180': userDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -645,14 +712,53 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div class="space-y-4">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold">
-                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
-                    </div>
-                    <span class="font-bold text-white text-base">Manab Kalyane Rokto Dan</span>
+                    @if($cmsLogo)
+                        <img src="{{ $cmsLogo }}" alt="{{ $cmsOrganizationName }}" class="h-8 w-auto object-contain shrink-0">
+                    @else
+                        <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold shrink-0">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
+                        </div>
+                    @endif
+                    <span class="font-bold text-white text-base">{{ $cmsOrganizationName }}</span>
                 </div>
                 <p class="text-xs leading-relaxed text-slate-400">
-                    Voluntary Blood Donor Network serving Bhagwangola-I, Bhagwangola-II, Lalgola & Murshidabad District. Saving lives 24/7.
+                    {{ $cmsAboutText ?: $cmsFooterText }}
                 </p>
+                @if($cmsUpiId)
+                    <div class="pt-1">
+                        <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">Official UPI ID:</span>
+                        <span class="text-xs font-mono font-bold text-rose-400 bg-slate-800/80 px-2 py-0.5 rounded-lg border border-slate-700 inline-block mt-0.5">{{ $cmsUpiId }}</span>
+                    </div>
+                @endif
+
+                <!-- Dynamic Social Media Handles -->
+                <div class="pt-2 flex items-center space-x-2.5 flex-wrap">
+                    @if($cmsSocialFacebook && $cmsSocialFacebook !== '#')
+                        <a href="{{ $cmsSocialFacebook }}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#1877F2] text-slate-300 hover:text-white flex items-center justify-center transition shadow" title="Facebook Page">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </a>
+                    @endif
+                    @if($cmsSocialInstagram && $cmsSocialInstagram !== '#')
+                        <a href="{{ $cmsSocialInstagram }}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#E4405F] text-slate-300 hover:text-white flex items-center justify-center transition shadow" title="Instagram Profile">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        </a>
+                    @endif
+                    @if($cmsSocialWhatsapp && $cmsSocialWhatsapp !== '#')
+                        <a href="{{ $cmsSocialWhatsapp }}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#25D366] text-slate-300 hover:text-white flex items-center justify-center transition shadow" title="WhatsApp Channel / Group">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.002 3.66 3.745-.983z"/></svg>
+                        </a>
+                    @endif
+                    @if($cmsSocialYoutube && $cmsSocialYoutube !== '#')
+                        <a href="{{ $cmsSocialYoutube }}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#FF0000] text-slate-300 hover:text-white flex items-center justify-center transition shadow" title="YouTube Channel">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </a>
+                    @endif
+                    @if($cmsSocialTwitter && $cmsSocialTwitter !== '#')
+                        <a href="{{ $cmsSocialTwitter }}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-black text-slate-300 hover:text-white flex items-center justify-center transition shadow" title="Twitter / X Profile">
+                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                    @endif
+                </div>
             </div>
 
             <div>
@@ -686,14 +792,19 @@
 
             <div>
                 <h4 class="font-bold text-white mb-3 text-xs uppercase tracking-wider">Emergency Contact</h4>
-                <p class="text-xs text-slate-400 mb-2">Bhagwangola Helpline:</p>
-                <a href="tel:+919832100000" class="text-base font-extrabold text-white hover:text-rose-400 transition block mb-1">+91 98321 00000</a>
+                <p class="text-xs text-slate-400 mb-2">Society Emergency Helpline:</p>
+                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $cmsHelplinePhone) }}" class="text-base font-extrabold text-white hover:text-rose-400 transition block mb-1">{{ $cmsHelplinePhone }}</a>
                 <p class="text-[11px] text-slate-500">Available 24 hours a day, 7 days a week.</p>
             </div>
         </div>
 
-        <div class="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-400">
-            © {{ date('Y') }} Manab Kalyane Rokto Dan — Bhagwangola Voluntary Blood Service. All rights reserved.
+        <div class="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left text-xs text-slate-400">
+            <div>
+                © {{ date('Y') }} {{ $cmsOrganizationName }}. All rights reserved.
+            </div>
+            <div class="font-medium text-slate-400">
+                Designed by : <a href="https://mabia.in" target="_blank" rel="noopener noreferrer" class="font-bold text-rose-400 hover:text-rose-300 hover:underline transition">mabia.in</a>
+            </div>
         </div>
     </footer>
 
@@ -756,8 +867,154 @@
                         _token: '{{ csrf_token() }}'
                     })], { type: 'application/json' }));
                 } catch (err) {}
-            }
-        });
+    <!-- Request Detail & In-Portal Live Chat Modal -->
+    <div x-show="chatModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-card max-w-2xl w-full rounded-3xl border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative" @click.away="chatModalOpen = false">
+            
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <template x-if="chatState.bloodGroup">
+                        <span class="w-10 h-10 rounded-2xl bg-rose-600/30 border border-rose-500/50 text-rose-300 font-black text-sm flex items-center justify-center shrink-0" x-text="chatState.bloodGroup"></span>
+                    </template>
+                    <template x-if="!chatState.bloodGroup">
+                        <span class="w-10 h-10 rounded-2xl bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 font-bold text-sm flex items-center justify-center shrink-0">💬</span>
+                    </template>
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base font-extrabold text-white truncate" x-text="chatState.patientName ? 'Request Details & Chat: ' + chatState.patientName : 'Member Chat: ' + chatState.name"></h3>
+                        <p class="text-xs text-slate-300 truncate" x-text="chatState.hospital ? chatState.hospital + ' • ' + chatState.location : 'Phone: ' + (chatState.phone || 'N/A')"></p>
+                    </div>
+                </div>
+                
+                <button @click="chatModalOpen = false" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-lg transition shrink-0">&times;</button>
+            </div>
+
+            <!-- Request Full Details Card (If Blood Request) -->
+            <template x-if="chatState.patientName">
+                <div class="p-4 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-xs space-y-2 shrink-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span class="font-bold text-slate-900 dark:text-white">Patient Name:</span>
+                            <span class="text-slate-700 dark:text-slate-300 font-semibold" x-text="chatState.patientName"></span>
+                            <span class="ml-2 font-bold text-rose-600 dark:text-rose-400" x-text="'(' + chatState.bloodGroup + ' • ' + chatState.units + ' Unit)'"></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <template x-if="chatState.phone">
+                                <a :href="'tel:' + chatState.phone" class="px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-emerald-600 text-white hover:bg-emerald-500 transition">📞 Call Phone</a>
+                            </template>
+                            <template x-if="chatState.phone">
+                                <a :href="'https://wa.me/91' + chatState.phone.replace(/[^0-9]/g, '') + '?text=Hello,%20responding%20to%20blood%20request%20for%20' + encodeURIComponent(chatState.patientName)" target="_blank" class="px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition">💬 WhatsApp</a>
+                            </template>
+                        </div>
+                    </div>
+                    <div x-show="chatState.hospital" class="text-slate-600 dark:text-slate-400">
+                        🏥 <strong>Hospital & Location:</strong> <span x-text="chatState.hospital"></span> (<span x-text="chatState.location"></span>)
+                    </div>
+                    <div x-show="chatState.notes" class="bg-white dark:bg-slate-950 p-2.5 rounded-xl text-slate-700 dark:text-slate-300 italic border border-slate-200 dark:border-slate-800" x-text="'&quot;' + chatState.notes + '&quot;'"></div>
+                </div>
+            </template>
+
+            <!-- Conversation History Messages Stream -->
+            <div id="chatMessagesScroll" class="flex-1 p-4 overflow-y-auto space-y-3 min-h-[220px] max-h-[350px] bg-slate-50 dark:bg-slate-950/80">
+                <template x-if="chatState.loading">
+                    <div class="text-center py-8 text-xs text-slate-400">Loading conversation history thread...</div>
+                </template>
+
+                <template x-if="!chatState.loading && chatState.messages.length === 0">
+                    <div class="text-center py-8 text-xs text-slate-400 space-y-1">
+                        <div class="text-2xl">💬</div>
+                        <div class="font-bold text-slate-700 dark:text-slate-300">No portal messages in this thread yet.</div>
+                        <div class="text-[11px]">Type below to start chatting directly through the portal!</div>
+                    </div>
+                </template>
+
+                <template x-for="msg in chatState.messages" :key="msg.id">
+                    <div :class="msg.is_mine ? 'flex flex-col items-end' : 'flex flex-col items-start'">
+                        <div class="text-[10px] text-slate-400 font-medium mb-0.5" x-text="msg.sender_name + ' • ' + msg.created_at_formatted"></div>
+                        <div :class="msg.is_mine ? 'bg-gradient-to-r from-rose-600 to-brand-600 text-white rounded-2xl rounded-tr-none' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-2xl rounded-tl-none'" class="p-3 text-xs shadow-sm max-w-[85%] leading-relaxed font-medium" x-text="msg.message"></div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Send Message Input Box -->
+            <div class="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+                <form @submit.prevent="sendPortalMessage()" class="flex items-center space-x-2">
+                    <input type="text" x-model="chatState.newMsg" placeholder="Type your message to communicate via portal..." class="flex-1 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition glow-red shrink-0 flex items-center gap-1">
+                        Send 📤
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Helper Functions for Portal Chat & Request Details -->
+    <script>
+        window.openPortalChat = function(details) {
+            const appEl = document.body;
+            if (!appEl || !window.Alpine) return;
+            const alpine = Alpine.$data(appEl);
+            if (!alpine) return;
+            alpine.chatState.requestId = details.requestId || null;
+            alpine.chatState.phone = details.phone || '';
+            alpine.chatState.name = details.name || details.patientName || 'Member';
+            alpine.chatState.patientName = details.patientName || '';
+            alpine.chatState.bloodGroup = details.bloodGroup || '';
+            alpine.chatState.hospital = details.hospital || '';
+            alpine.chatState.location = details.location || '';
+            alpine.chatState.notes = details.notes || '';
+            alpine.chatState.units = details.units || 1;
+            alpine.chatState.messages = [];
+            alpine.chatState.newMsg = '';
+            alpine.chatState.loading = true;
+            alpine.chatModalOpen = true;
+
+            fetch('/api/chat/messages?blood_request_id=' + (details.requestId || '') + '&phone=' + encodeURIComponent(details.phone || ''))
+                .then(res => res.json())
+                .then(data => {
+                    alpine.chatState.messages = data.messages || [];
+                    alpine.chatState.loading = false;
+                    setTimeout(() => {
+                        const box = document.getElementById('chatMessagesScroll');
+                        if (box) box.scrollTop = box.scrollHeight;
+                    }, 100);
+                })
+                .catch(() => { alpine.chatState.loading = false; });
+        };
+
+        window.sendPortalMessage = function() {
+            const appEl = document.body;
+            if (!appEl || !window.Alpine) return;
+            const alpine = Alpine.$data(appEl);
+            if (!alpine || !alpine.chatState.newMsg.trim()) return;
+
+            const payload = {
+                message: alpine.chatState.newMsg,
+                blood_request_id: alpine.chatState.requestId,
+                receiver_phone: alpine.chatState.phone,
+                receiver_name: alpine.chatState.name,
+                _token: '{{ csrf_token() }}'
+            };
+
+            const textSent = alpine.chatState.newMsg;
+            alpine.chatState.newMsg = '';
+
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data) {
+                    alpine.chatState.messages.push(res.data);
+                    setTimeout(() => {
+                        const box = document.getElementById('chatMessagesScroll');
+                        if (box) box.scrollTop = box.scrollHeight;
+                    }, 100);
+                }
+            });
+        };
     </script>
 </body>
 </html>

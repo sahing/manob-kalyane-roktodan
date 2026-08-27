@@ -323,10 +323,20 @@
                     </div>
 
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ $req->patient_name }}</h3>
-                    <p class="text-xs text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+                    <p class="text-xs text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                         {{ $req->hospital_name }} ({{ $req->location }})
                     </p>
+
+                    <!-- REQUIREMENT DATE BADGE -->
+                    <div class="mb-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-1 uppercase">
+                            <span>📅</span> Date Needed:
+                        </span>
+                        <span class="text-xs font-extrabold text-slate-900 dark:text-white font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                            {{ $req->needed_by_date ? $req->needed_by_date->format('d M Y') : $req->created_at->format('d M Y') }}
+                        </span>
+                    </div>
 
                     @if($req->notes)
                         <p class="text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800/80 mb-4 line-clamp-2">
