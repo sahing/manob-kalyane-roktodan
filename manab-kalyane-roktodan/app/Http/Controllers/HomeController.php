@@ -41,6 +41,8 @@ class HomeController extends Controller
             'about_text' => SiteContent::getValue('about_text', 'Manab Kalyane Rokto Dan is dedicated to serving Bhagwangola and Murshidabad with instant blood donation assistance.'),
         ];
 
-        return view('home', compact('slides', 'stats', 'pendingRequests', 'members', 'recentGallery', 'stories', 'siteContent'));
+        $inquiryGatePassed = \Illuminate\Support\Facades\Auth::check() || session()->has('inquiry_passed');
+
+        return view('home', compact('slides', 'stats', 'pendingRequests', 'members', 'recentGallery', 'stories', 'siteContent', 'inquiryGatePassed'));
     }
 }

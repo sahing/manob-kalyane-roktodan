@@ -31,8 +31,12 @@ class PledgeController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'pending';
 
-        DonationPledge::create($validated);
+        $pledge = DonationPledge::create($validated);
 
-        return back()->with('success', 'Thank you! Your contribution pledge has been recorded for admin verification.');
+        if (Auth::check()) {
+            Auth::user()->upgradeRoleAfterContribution('financial donation pledge');
+        }
+
+        return back()->with('success', 'Thank you! Your contribution pledge has been recorded and your account upgraded to Voluntary Donor status.');
     }
 }

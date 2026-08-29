@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $stats = [
             'total_users' => User::count(),
@@ -42,8 +42,30 @@ class AdminController extends Controller
             'total_page_views' => PageAnalytic::count(),
         ];
 
+        // Search & Pagination for Registered Users Table
+        $userSearch = trim($request->input('search_user', ''));
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [5, 10, 15, 25, 50, 100])) {
+            $perPage = 10;
+        }
+
+        $userQuery = User::with(['donorProfile', 'roleModel']);
+
+        if ($userSearch !== '') {
+            $userQuery->where(function($q) use ($userSearch) {
+                $q->where('name', 'LIKE', "%{$userSearch}%")
+                  ->orWhere('email', 'LIKE', "%{$userSearch}%")
+                  ->orWhere('phone', 'LIKE', "%{$userSearch}%")
+                  ->orWhereHas('donorProfile', function($dp) use ($userSearch) {
+                      $dp->where('donor_code', 'LIKE', "%{$userSearch}%")
+                         ->orWhere('block', 'LIKE', "%{$userSearch}%")
+                         ->orWhere('blood_group', 'LIKE', "%{$userSearch}%");
+                  });
+            });
+        }
+
+        $users = $userQuery->latest()->paginate($perPage, ['*'], 'users_page')->withQueryString();
         $recentRequests = BloodRequest::latest()->take(10)->get();
-        $users = User::with(['donorProfile', 'roleModel'])->latest()->take(20)->get();
         $members = Member::orderBy('sort_order')->get();
         $slides = HeroSlide::orderBy('sort_order')->get();
         $gallery = Gallery::latest()->take(12)->get();
@@ -228,9 +250,10 @@ class AdminController extends Controller
         $donorUser = User::find($validated['user_id']);
         if ($donorUser) {
             $donorUser->increment('loyalty_points', 100);
+            $donorUser->upgradeRoleAfterContribution('official blood donation');
         }
 
-        return back()->with('success', "Donation recorded successfully! Certificate ID: {$certId} (+100 Loyalty Points awarded)");
+        return back()->with('success', "Blood donation recorded successfully! Certificate ID: {$certId} (+100 Loyalty Points awarded & Account upgraded to Voluntary Donor status)");
     }
 
     public function storeSlide(Request $request)
@@ -349,13 +372,13 @@ class AdminController extends Controller
             'assigned_email_login_url' => 'nullable|string|max:255',
         ]);
 
-        $roleObj = Role::where('name', $validated['role'])->first();
+        $roleObj = Role::where('name', strtolower($validated['role']))->first();
 
         $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'role' => $validated['role'],
+            'role' => strtolower($validated['role']),
             'role_id' => $roleObj?->id,
             'loyalty_points' => $validated['loyalty_points'],
             'assigned_email' => $request->input('assigned_email'),
@@ -368,6 +391,10 @@ class AdminController extends Controller
         }
 
         $user->update($userData);
+
+        if (Auth::check() && Auth::id() === $user->id) {
+            Auth::setUser($user->fresh(['roleModel']));
+        }
 
         DonorProfile::updateOrCreate(
             ['user_id' => $user->id],
@@ -505,12 +532,16 @@ class AdminController extends Controller
             'role_name' => 'required|string|exists:roles,name',
         ]);
 
-        $role = Role::where('name', $validated['role_name'])->firstOrFail();
+        $role = Role::where('name', strtolower($validated['role_name']))->firstOrFail();
 
         $user->update([
             'role_id' => $role->id,
             'role' => $role->name,
         ]);
+
+        if (Auth::check() && Auth::id() === $user->id) {
+            Auth::setUser($user->fresh(['roleModel']));
+        }
 
         return back()->with('success', "User '{$user->name}' role updated to '{$role->label}' successfully!");
     }

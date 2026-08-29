@@ -259,7 +259,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{ authModal: false, authMode: 'login', shareOpen: false, mobileMenu: false, chatModalOpen: false, chatState: { requestId: null, phone: '', name: '', patientName: '', bloodGroup: '', hospital: '', location: '', notes: '', units: 1, messages: [], newMsg: '', loading: false } }">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{ authModal: {{ $errors->any() ? 'true' : 'false' }}, authMode: 'login', shareOpen: false, mobileMenu: false, chatModalOpen: false, chatState: { requestId: null, phone: '', name: '', patientName: '', bloodGroup: '', hospital: '', location: '', notes: '', units: 1, messages: [], newMsg: '', loading: false } }">
 
     <!-- Top Helpline Bar -->
     <div class="bg-gradient-to-r from-rose-900 via-slate-900 to-rose-950 dark:from-brand-950 dark:via-slate-900 dark:to-brand-950 text-white text-xs py-2 px-3 sm:px-6 lg:px-8 shadow-sm relative z-50 overflow-hidden">
@@ -556,24 +556,92 @@
         </div>
     </header>
 
-    <!-- Flash Alerts -->
-    @if(session('success'))
-        <div class="max-w-7xl mx-auto px-4 mt-4">
-            <div class="bg-emerald-500/20 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-xl text-xs font-semibold flex items-center justify-between shadow-lg">
-                <span>{{ session('success') }}</span>
-                <button onclick="this.parentElement.remove()" class="text-emerald-600 dark:text-emerald-400 hover:text-slate-900 font-bold">&times;</button>
-            </div>
-        </div>
-    @endif
+    <!-- Floating Flash Notification Toast Cards -->
+    <div x-data="{ showSuccess: true, showError: true, showStatus: true }" class="fixed top-20 right-4 sm:right-6 z-50 max-w-sm sm:max-w-md w-full space-y-3 pointer-events-none">
+        
+        <!-- SUCCESS FLASH CARD -->
+        @if(session('success'))
+            <div x-show="showSuccess"
+                 x-init="setTimeout(() => showSuccess = false, 7000)"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 translate-y-[-12px] scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-[-12px] scale-95"
+                 class="pointer-events-auto bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-xl border border-emerald-500/50 p-4 rounded-2xl shadow-2xl flex items-start space-x-3 text-white glow-emerald">
+                
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 font-black text-lg">
+                    ✓
+                </div>
+                
+                <div class="flex-1 pr-2 pt-0.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-emerald-400">Success Notification</h4>
+                    <p class="text-xs text-slate-200 font-medium leading-relaxed mt-0.5">{{ session('success') }}</p>
+                </div>
 
-    @if(session('error'))
-        <div class="max-w-7xl mx-auto px-4 mt-4">
-            <div class="bg-rose-500/20 border border-rose-500/40 text-rose-800 dark:text-rose-300 px-4 py-3 rounded-xl text-xs font-semibold flex items-center justify-between shadow-lg">
-                <span>{{ session('error') }}</span>
-                <button onclick="this.parentElement.remove()" class="text-rose-600 dark:text-rose-400 hover:text-slate-900 font-bold">&times;</button>
+                <button @click="showSuccess = false" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg text-base font-bold transition">
+                    &times;
+                </button>
             </div>
-        </div>
-    @endif
+        @endif
+
+        <!-- ERROR / LOGIN FAILED FLASH CARD -->
+        @if(session('error') || $errors->any())
+            <div x-show="showError"
+                 x-init="setTimeout(() => showError = false, 8000)"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 translate-y-[-12px] scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-[-12px] scale-95"
+                 class="pointer-events-auto bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-xl border border-rose-500/60 p-4 rounded-2xl shadow-2xl flex items-start space-x-3 text-white glow-red">
+                
+                <div class="w-10 h-10 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-400 flex items-center justify-center shrink-0 font-black text-lg animate-pulse">
+                    ⚠️
+                </div>
+                
+                <div class="flex-1 pr-2 pt-0.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-rose-400">Authentication / System Alert</h4>
+                    <p class="text-xs text-slate-200 font-medium leading-relaxed mt-0.5">
+                        {{ session('error') ?: ($errors->first() ?: 'Please check your login details and try again.') }}
+                    </p>
+                </div>
+
+                <button @click="showError = false" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg text-base font-bold transition">
+                    &times;
+                </button>
+            </div>
+        @endif
+
+        <!-- STATUS / INFO FLASH CARD -->
+        @if(session('status'))
+            <div x-show="showStatus"
+                 x-init="setTimeout(() => showStatus = false, 7000)"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 translate-y-[-12px] scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-[-12px] scale-95"
+                 class="pointer-events-auto bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-start space-x-3 text-white">
+                
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center shrink-0 font-black text-lg">
+                    ℹ️
+                </div>
+                
+                <div class="flex-1 pr-2 pt-0.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-300">Status Update</h4>
+                    <p class="text-xs text-slate-200 font-medium leading-relaxed mt-0.5">{{ session('status') }}</p>
+                </div>
+
+                <button @click="showStatus = false" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg text-base font-bold transition">
+                    &times;
+                </button>
+            </div>
+        @endif
+    </div>
 
     <!-- Page Content -->
     <main class="flex-grow">
@@ -629,48 +697,65 @@
                 </div>
             </div>
 
-            <!-- Login Form -->
+            <!-- Login Form (Mobile Number Default) -->
             <div x-show="authMode === 'login'">
+                @if ($errors->any() || session('error'))
+                    <div class="mb-4 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold space-y-1 shadow-sm">
+                        <div class="font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-rose-700 dark:text-rose-300">
+                            <span>⚠️</span> Authentication Failed
+                        </div>
+                        <p class="text-xs text-rose-600 dark:text-rose-400 font-medium">{{ session('error') ?: $errors->first() }}</p>
+                    </div>
+                @endif
+
                 <form action="{{ route('login') }}" method="POST" class="space-y-4">
                     @csrf
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">Email Address</label>
-                        <input type="email" name="email" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase flex items-center justify-between">
+                            <span>📱 Mobile Number (or Email)</span>
+                            <span class="text-[10px] text-rose-500 font-bold lowercase">Required</span>
+                        </label>
+                        <input type="text" name="login_id" value="{{ old('login_id') }}" placeholder="e.g. 9832100000 or email" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-medium">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">Password</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Password</label>
+                            <button type="button" @click="authMode = 'forgot'" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline">Forgot Password?</button>
+                        </div>
                         <input type="password" name="password" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                     </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-bold py-3 rounded-xl hover:opacity-95 shadow-md transition">
-                        Sign In to Account
+                    <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-extrabold py-3 rounded-xl hover:opacity-95 shadow-md transition">
+                        Sign In via Mobile / Email
                     </button>
-                    <div class="text-center text-xs text-slate-500 dark:text-slate-400 mt-4">
-                        Don't have an account yet? <button type="button" @click="authMode = 'signup'" class="text-rose-600 dark:text-rose-400 font-bold hover:underline">Register New Account</button>
+                    
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                        <span>Don't have an account?</span>
+                        <button type="button" @click="authMode = 'signup'" class="text-rose-600 dark:text-rose-400 font-bold hover:underline">Register New Account</button>
                     </div>
                 </form>
             </div>
 
-            <!-- Signup Form -->
+            <!-- Signup Form (Email Optional) -->
             <div x-show="authMode === 'signup'">
-                <form action="{{ route('register') }}" method="POST" class="space-y-4">
+                <form action="{{ route('register') }}" method="POST" class="space-y-3.5">
                     @csrf
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
-                        <input type="text" name="name" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                        <input type="text" name="name" value="{{ old('name') }}" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email</label>
-                            <input type="email" name="email" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">📱 Phone (Required)</label>
+                            <input type="tel" name="phone" value="{{ old('phone') }}" required placeholder="10-digit mobile" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-medium">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Phone</label>
-                            <input type="tel" name="phone" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">✉️ Email (Optional)</label>
+                            <input type="email" name="email" value="{{ old('email') }}" placeholder="Optional" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Blood Group</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Blood Group</label>
                             <select name="blood_group" required class="searchable-select w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-bold">
                                 @foreach(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as $g)
                                     <option value="{{ $g }}">{{ $g }}</option>
@@ -678,7 +763,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Block</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Block</label>
                             <select name="block" required class="searchable-select w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-medium">
                                 <option value="Bhagwangola-I">Bhagwangola-I</option>
                                 <option value="Bhagwangola-II">Bhagwangola-II</option>
@@ -687,25 +772,94 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Referral Code (Optional)</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Referral Code (Optional)</label>
                         <input type="text" name="ref_code" placeholder="e.g. MKRD-REF-0001" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white uppercase focus:outline-none focus:border-rose-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
                             <input type="password" name="password" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Confirm</label>
                             <input type="password" name="password_confirmation" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-bold py-3 rounded-xl hover:opacity-95 shadow-md transition">
+                    <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-extrabold py-3 rounded-xl hover:opacity-95 shadow-md transition">
                         Create Voluntary Account
                     </button>
                     <div class="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
                         Already registered? <button type="button" @click="authMode = 'login'" class="text-rose-600 dark:text-rose-400 font-bold hover:underline">Sign In</button>
                     </div>
+                </form>
+            </div>
+
+            <!-- Forgot Password View (Mobile Number Lookup) -->
+            <div x-show="authMode === 'forgot'" x-cloak>
+                <div class="mb-4">
+                    <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>🔑</span> Reset Password via Mobile
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Enter your registered 10-digit mobile number below. A new password reset code will be generated and dispatched to your linked email address.
+                    </p>
+                </div>
+
+                <form action="{{ route('password.forgot') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">Registered Mobile Number</label>
+                        <input type="tel" name="phone" required placeholder="Enter 10-digit registered phone" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-mono font-bold">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-extrabold py-3 rounded-xl hover:opacity-95 shadow-md transition">
+                        Reset & Send Password to Email
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-center space-y-2">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        No email registered or confusion mapping phone & email?
+                    </p>
+                    <button type="button" @click="authMode = 'support'" class="w-full py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition">
+                        💬 Contact Admin Support / Request Account Mapping
+                    </button>
+                    <button type="button" @click="authMode = 'login'" class="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white block mx-auto mt-2">
+                        ← Back to Sign In
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Support Request View for Account Mapping Confusion -->
+            <div x-show="authMode === 'support'" x-cloak>
+                <div class="mb-4">
+                    <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>🛡️</span> Admin Account Recovery Ticket
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        If you have confusion with your registered mobile/email mapping, submit a support ticket below. Our Admin team will verify your phone number and contact you directly.
+                    </p>
+                </div>
+
+                <form action="{{ route('support.account-issue') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">Your Full Name</label>
+                        <input type="text" name="name" value="{{ session('support_user_name') }}" required placeholder="Enter your full name" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">Your Mobile Number</label>
+                        <input type="tel" name="phone" value="{{ session('support_user_phone') }}" required placeholder="10-digit mobile number" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">Issue Details / Email Confusion</label>
+                        <textarea name="issue_description" rows="3" required placeholder="Describe the issue (e.g., I lost access to my email address or need my mobile number mapped to my account)..." class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-amber-600 to-rose-600 text-white font-extrabold py-3 rounded-xl hover:opacity-95 shadow-md transition">
+                        Submit Verification Ticket to Admin
+                    </button>
+                    <button type="button" @click="authMode = 'login'" class="w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white text-center mt-2 block">
+                        ← Back to Sign In
+                    </button>
                 </form>
             </div>
         </div>

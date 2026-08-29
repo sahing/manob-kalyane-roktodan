@@ -12,8 +12,9 @@ class RequestController extends Controller
     {
         $pending = BloodRequest::where('status', 'pending')->latest()->paginate(15);
         $fulfilled = BloodRequest::where('status', 'fulfilled')->latest()->take(5)->get();
+        $inquiryGatePassed = Auth::check() || session()->has('inquiry_passed');
 
-        return view('requests.index', compact('pending', 'fulfilled'));
+        return view('requests.index', compact('pending', 'fulfilled', 'inquiryGatePassed'));
     }
 
     public function store(Request $request)

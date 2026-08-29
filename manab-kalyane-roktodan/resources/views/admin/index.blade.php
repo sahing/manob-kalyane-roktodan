@@ -35,8 +35,8 @@
 
     @php
         $authUser = Auth::user();
-        $defaultTab = 'inquiries';
-        if (!$authUser->hasPermission('manage_requests')) {
+        $defaultTab = request('tab', (request()->hasAny(['search_user', 'users_page', 'per_page']) ? 'users' : 'inquiries'));
+        if (!request()->has('tab') && !request()->hasAny(['search_user', 'users_page', 'per_page']) && !$authUser->hasPermission('manage_requests')) {
             if ($authUser->hasPermission('manage_finances')) {
                 $defaultTab = 'pledges';
             } elseif ($authUser->hasPermission('manage_users')) {
@@ -396,6 +396,49 @@
         </div>
 
         <div class="glass-card rounded-3xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800">
+            <!-- Search & Filter Control Header -->
+            <div class="p-4 sm:p-6 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h4 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>👥 Registered Donors & Users Directory</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                            {{ number_format($users->total()) }} Registered
+                        </span>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Filter by typing Name, Phone, Email address, Blood Group, or Block location.</p>
+                </div>
+
+                <form method="GET" action="{{ route('admin.index') }}" class="flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="tab" value="users">
+                    
+                    <div class="relative min-w-[240px] flex-1">
+                        <input type="text" name="search_user" value="{{ request('search_user') }}" placeholder="🔎 Type Name, Phone, Email..." class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        @if(request('search_user'))
+                            <a href="{{ route('admin.index', ['tab' => 'users', 'per_page' => request('per_page', 10)]) }}" class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-rose-500 font-bold" title="Clear Search">✖</a>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Rows:</label>
+                        <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none">
+                            @foreach([5, 10, 15, 25, 50, 100] as $n)
+                                <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>{{ $n }} / page</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-rose-600 hover:bg-rose-500 text-white transition shadow flex items-center gap-1">
+                        <span>🔍 Search</span>
+                    </button>
+
+                    @if(request('search_user'))
+                        <a href="{{ route('admin.index', ['tab' => 'users']) }}" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                            Reset
+                        </a>
+                    @endif
+                </form>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 uppercase font-bold">
@@ -409,7 +452,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                        @foreach($users as $u)
+                        @forelse($users as $u)
                             @php
                                 $profile = $u->donorProfile;
                                 $isEligible = $profile?->is_eligible ?? true;
@@ -485,9 +528,33 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                                    <div class="text-3xl mb-2">🔍</div>
+                                    <div class="font-extrabold text-slate-700 dark:text-slate-300 text-sm">No registered users matched your search criteria</div>
+                                    <p class="text-xs text-slate-400 mt-1">Try searching by a different name, phone number, email address, or clear the search filter.</p>
+                                    @if(request('search_user'))
+                                        <a href="{{ route('admin.index', ['tab' => 'users']) }}" class="inline-block mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 transition shadow">
+                                            Clear Search Filter
+                                        </a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Table Pagination Controls Footer -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Showing <span class="font-extrabold text-slate-900 dark:text-white">{{ $users->firstItem() ?? 0 }}</span> to <span class="font-extrabold text-slate-900 dark:text-white">{{ $users->lastItem() ?? 0 }}</span> of <span class="font-extrabold text-slate-900 dark:text-white">{{ number_format($users->total()) }}</span> registered users
+                </div>
+
+                <div class="flex items-center gap-2">
+                    {{ $users->links() }}
+                </div>
             </div>
         </div>
     </div>
