@@ -3,8 +3,9 @@
 @section('title', 'Official Digital Donor ID Card — Manab Kalyane Rokto Dan')
 
 @section('content')
-<!-- Include html2canvas for high-resolution PNG generation -->
+<!-- Include html2canvas & qrcodejs for 100% reliable local PNG generation without CORS issues -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 
 <style>
     /* CR80 Proportions for Perfect Consistency Across Screen, Image Export & Print */
@@ -86,24 +87,24 @@
             </div>
 
             <!-- Download HD PNG Image -->
-            <button onclick="downloadActiveCardPNG()" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition flex items-center gap-1.5">
+            <button type="button" onclick="downloadActiveCardPNG(this)" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition flex items-center gap-1.5">
                 <span>🖼️</span> Download HD Image
             </button>
 
             <!-- Share Card Button -->
-            <button @click="shareModal = true" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 hover:bg-rose-500 text-white shadow-md transition flex items-center gap-1.5">
+            <button type="button" @click="shareModal = true" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 hover:bg-rose-500 text-white shadow-md transition flex items-center gap-1.5">
                 <span>📲</span> Share Card
             </button>
 
             <!-- Print CR80 Button -->
-            <button onclick="window.print()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition flex items-center gap-1">
+            <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition flex items-center gap-1">
                 🖨️ Print Card (CR80)
             </button>
         </div>
     </div>
 
     <!-- CARDS CONTAINER (GRID ON SCREEN, STACKED IN PRINT) -->
-    <div id="cards-export-container" class="print-cards-wrapper grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center my-4">
+    <div id="cards-export-container" class="print-cards-wrapper grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center my-4 bg-slate-950 p-4 rounded-3xl">
         
         <!-- FRONT SIDE DIGITAL DONOR ID CARD -->
         <div id="card-front-side" 
@@ -163,8 +164,9 @@
             <!-- Card Footer with Verification QR Code -->
             <div class="pt-1.5 border-t border-slate-800/90 flex items-center justify-between relative z-10">
                 <div class="flex items-center gap-2">
-                    <div class="bg-white p-0.5 rounded-lg border border-slate-700 shadow shrink-0">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($verificationUrl) }}" crossorigin="anonymous" alt="QR Code" class="w-7 h-7 sm:w-8 sm:h-8">
+                    <!-- Pure Inline QR Code Container -->
+                    <div class="bg-white p-1 rounded-lg border border-slate-700 shadow shrink-0">
+                        <div id="qrcode-box" class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"></div>
                     </div>
                     <div class="text-[7px] sm:text-[8px] text-slate-400 leading-tight">
                         <span class="font-bold text-slate-200 block">Scan to Verify</span>
@@ -252,10 +254,25 @@
     </div>
 </div>
 
-<!-- JS Script for Client-Side High-Res PNG Download -->
+<!-- Pure JS Client-Side QR Code & HD PNG Downloader -->
 <script>
-    function downloadActiveCardPNG() {
-        const viewMode = Alpine.$data(document.querySelector('[x-data]')).viewMode;
+    document.addEventListener('DOMContentLoaded', () => {
+        const qrContainer = document.getElementById("qrcode-box");
+        if (qrContainer) {
+            new QRCode(qrContainer, {
+                text: "{{ $verificationUrl }}",
+                width: 32,
+                height: 32,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+        }
+    });
+
+    function downloadActiveCardPNG(btnElement) {
+        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+        const viewMode = alpineData ? alpineData.viewMode : 'both';
         let exportTarget;
 
         if (viewMode === 'front') {
@@ -268,25 +285,27 @@
 
         if (!exportTarget) return;
 
-        const btn = event.currentTarget;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '⏳ Exporting HD PNG...';
+        const originalText = btnElement ? btnElement.innerHTML : 'Download HD Image';
+        if (btnElement) btnElement.innerHTML = '⏳ Exporting HD PNG...';
 
         html2canvas(exportTarget, {
-            scale: 3, // 300 DPI Rendering
+            scale: 2.5, // 300 DPI Ultra Clear Resolution
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             backgroundColor: viewMode === 'both' ? '#020617' : null
         }).then(canvas => {
+            const imageURI = canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.download = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
+            link.href = imageURI;
+            document.body.appendChild(link);
             link.click();
-            btn.innerHTML = originalText;
+            document.body.removeChild(link);
+            if (btnElement) btnElement.innerHTML = originalText;
         }).catch(err => {
             console.error('Download error:', err);
-            btn.innerHTML = originalText;
-            alert('Unable to generate PNG image. Please use Print CR80 to save as PDF.');
+            if (btnElement) btnElement.innerHTML = originalText;
+            alert('Unable to generate PNG image automatically. Please click Print Card (CR80) to save as PDF.');
         });
     }
 </script>
