@@ -3,7 +3,8 @@
 @section('title', 'Official Digital Donor ID Card — Manab Kalyane Rokto Dan')
 
 @section('content')
-<!-- Include html2canvas & qrcodejs for high-resolution local PNG generation -->
+<!-- Include html-to-image, html2canvas & qrcodejs for 100% reliable PNG generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 
@@ -262,7 +263,7 @@
     </div>
 </div>
 
-<!-- JS Client-Side QR Code & HD PNG Downloader -->
+<!-- High-Res PNG Downloader Engine -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const qrContainer = document.getElementById("qrcode-box");
@@ -283,7 +284,7 @@
         }
     });
 
-    function downloadActiveCardPNG(btnElement) {
+    async function downloadActiveCardPNG(btnElement) {
         let viewMode = 'both';
         try {
             const alpineData = Alpine.$data(document.querySelector('[x-data]'));
@@ -304,36 +305,58 @@
         const originalText = btnElement ? btnElement.innerHTML : 'Download HD Image';
         if (btnElement) btnElement.innerHTML = '⏳ Exporting HD PNG...';
 
-        if (typeof html2canvas === 'undefined') {
-            if (btnElement) btnElement.innerHTML = originalText;
-            window.print();
-            return;
+        const fileName = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
+
+        // Trigger file download helper
+        const triggerDownload = (dataUrl) => {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // Engine 1: html-to-image (Uses native browser SVG foreignObject for pixel-perfect render)
+        if (typeof htmlToImage !== 'undefined') {
+            try {
+                const dataUrl = await htmlToImage.toPng(exportTarget, {
+                    quality: 0.95,
+                    pixelRatio: 2,
+                    backgroundColor: viewMode === 'both' ? '#020617' : null,
+                    filter: (node) => !node.classList || !node.classList.contains('no-print')
+                });
+                triggerDownload(dataUrl);
+                if (btnElement) btnElement.innerHTML = originalText;
+                return;
+            } catch (err1) {
+                console.warn('htmlToImage failed, trying html2canvas fallback:', err1);
+            }
         }
 
-        html2canvas(exportTarget, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: viewMode === 'both' ? '#020617' : null
-        }).then(canvas => {
+        // Engine 2: html2canvas fallback
+        if (typeof html2canvas !== 'undefined') {
             try {
-                const imageURI = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.download = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
-                link.href = imageURI;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch (e) {
-                console.error("Canvas toDataURL failed:", e);
-                alert("Please click Print Card (CR80) to save as PDF.");
+                const canvas = await html2canvas(exportTarget, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: viewMode === 'both' ? '#020617' : null,
+                    ignoreElements: (node) => node.classList && node.classList.contains('no-print')
+                });
+                const dataUrl = canvas.toDataURL('image/png');
+                triggerDownload(dataUrl);
+                if (btnElement) btnElement.innerHTML = originalText;
+                return;
+            } catch (err2) {
+                console.warn('html2canvas failed:', err2);
             }
-            if (btnElement) btnElement.innerHTML = originalText;
-        }).catch(err => {
-            console.error('html2canvas error:', err);
-            if (btnElement) btnElement.innerHTML = originalText;
-            alert('Unable to capture card. Please use Print Card (CR80) to save as PDF.');
-        });
+        }
+
+        // Engine 3: Print to PDF fallback
+        if (btnElement) btnElement.innerHTML = originalText;
+        alert("Unable to capture image automatically. Opening print window to save as PDF...");
+        window.print();
     }
 </script>
 @endsection
