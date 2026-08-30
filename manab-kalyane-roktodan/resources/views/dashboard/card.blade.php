@@ -287,9 +287,16 @@
     async function downloadActiveCardPNG(btnElement) {
         let viewMode = 'both';
         try {
-            const alpineData = Alpine.$data(document.querySelector('[x-data]'));
-            if (alpineData) viewMode = alpineData.viewMode;
+            const rootEl = document.querySelector('[x-data]');
+            if (rootEl && window.Alpine && typeof window.Alpine.$data === 'function') {
+                const alpineData = window.Alpine.$data(rootEl);
+                if (alpineData && alpineData.viewMode) {
+                    viewMode = alpineData.viewMode;
+                }
+            }
         } catch(e) {}
+
+        viewMode = String(viewMode || 'both');
 
         let exportTarget;
         if (viewMode === 'front') {
@@ -305,7 +312,8 @@
         const originalText = btnElement ? btnElement.innerHTML : 'Download HD Image';
         if (btnElement) btnElement.innerHTML = '⏳ Exporting HD PNG...';
 
-        const fileName = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
+        const safeModeStr = viewMode.toUpperCase();
+        const fileName = `Donor_Card_${safeModeStr}_{{ $cardId }}.png`;
 
         // Trigger file download helper
         const triggerDownload = (dataUrl) => {
@@ -316,6 +324,7 @@
             link.click();
             document.body.removeChild(link);
         };
+
 
         // Engine 1: html-to-image (Uses native browser SVG foreignObject for pixel-perfect render)
         if (typeof htmlToImage !== 'undefined') {
