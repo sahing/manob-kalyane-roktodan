@@ -7,12 +7,17 @@ use App\Models\DonorProfile;
 use App\Models\DonationHistory;
 use App\Models\BloodRequest;
 use App\Models\UserNotification;
+use App\Models\SiteContent;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        if (Auth::user()->role === 'guest') {
+            return redirect()->route('requests.index')->with('info', 'Guest accounts do not have access to the donor dashboard. Please register as a verified donor to access full dashboard features.');
+        }
+
         $user = Auth::user()->load(['donorProfile', 'donations', 'bloodRequests', 'notifications']);
 
         $lastDonation = $user->donorProfile?->last_donation_date;
@@ -92,8 +97,9 @@ class DashboardController extends Controller
         $cardId = $user->donorProfile->donor_code ?: DonorProfile::generateUniqueDonorCode($user->donorProfile->id);
         $totalDonations = $user->donations->count();
         $verificationUrl = route('verify.show', ['code' => $cardId]);
+        $helplinePhone = SiteContent::getValue('helpline_phone', '+91 98321 00000');
 
-        return view('dashboard.card', compact('user', 'cardId', 'totalDonations', 'verificationUrl'));
+        return view('dashboard.card', compact('user', 'cardId', 'totalDonations', 'verificationUrl', 'helplinePhone'));
     }
 
     public function showCertificate($id)

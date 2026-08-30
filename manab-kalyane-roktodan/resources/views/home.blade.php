@@ -351,16 +351,16 @@
                         <span class="font-bold text-rose-600 dark:text-rose-400">Emergency Case</span>
                     </div>
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <button type="button" onclick="openPortalChat({{ json_encode([
-                            'requestId' => $req->id,
-                            'patientName' => $req->patient_name,
-                            'bloodGroup' => $req->blood_group,
-                            'units' => $req->units_required,
-                            'hospital' => $req->hospital_name,
-                            'location' => $req->location,
-                            'phone' => $req->contact_number,
-                            'notes' => $req->notes ?? ''
-                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center justify-center gap-1 shadow-md">
+                        <button type="button" onclick="window.openPortalChat(this)"
+                            data-request-id="{{ $req->id }}"
+                            data-patient-name="{{ $req->patient_name }}"
+                            data-blood-group="{{ $req->blood_group }}"
+                            data-units="{{ $req->units_required }}"
+                            data-hospital="{{ $req->hospital_name }}"
+                            data-location="{{ $req->location }}"
+                            data-phone="{{ $req->contact_number }}"
+                            data-notes="{{ $req->notes ?? '' }}"
+                            class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center justify-center gap-1 shadow-md">
                             👁️ View Details & Chat
                         </button>
                         

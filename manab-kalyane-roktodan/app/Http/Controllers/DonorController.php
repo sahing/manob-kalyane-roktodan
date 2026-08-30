@@ -17,8 +17,8 @@ class DonorController extends Controller
         $keyword = $request->query('q');
         $availableOnly = $request->boolean('available_only', true);
         
-        // Has user submitted a search action?
-        $hasSearched = $request->has('blood_group') || $request->has('block') || $request->has('q') || $request->has('searched') || $request->has('all');
+        // Default to active donors view on search page
+        $hasSearched = true;
 
         $donors = null;
 

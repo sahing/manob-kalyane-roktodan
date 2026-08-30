@@ -37,7 +37,17 @@ class ChatController extends Controller
             return response()->json(['messages' => []]);
         }
 
-        $messages = $query->orderBy('created_at', 'asc')->get()->map(function($msg) {
+        $myPhone = $request->query('my_phone');
+        $messages = $query->orderBy('created_at', 'asc')->get()->map(function($msg) use ($myPhone) {
+            $isMine = false;
+            if (Auth::check()) {
+                $isMine = ($msg->sender_id == Auth::id());
+            } elseif (!empty($myPhone)) {
+                $cleanedMy = preg_replace('/[^0-9]/', '', $myPhone);
+                $cleanedSender = preg_replace('/[^0-9]/', '', $msg->sender_phone);
+                $isMine = (!empty($cleanedMy) && $cleanedMy === $cleanedSender);
+            }
+
             return [
                 'id' => $msg->id,
                 'sender_id' => $msg->sender_id,
@@ -48,7 +58,7 @@ class ChatController extends Controller
                 'message' => $msg->message,
                 'time_ago' => $msg->created_at->diffForHumans(),
                 'created_at_formatted' => $msg->created_at->format('d M h:i A'),
-                'is_mine' => Auth::check() ? ($msg->sender_id == Auth::id()) : false,
+                'is_mine' => $isMine,
             ];
         });
 

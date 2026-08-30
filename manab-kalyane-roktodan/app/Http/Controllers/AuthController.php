@@ -26,7 +26,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'login_id' => 'required|string',
-            'password' => 'required|string',
+            'password' => 'nullable|string',
         ], [
             'login_id.required' => 'Please enter your registered Mobile Number or Email address.',
         ]);
@@ -41,20 +41,40 @@ class AuthController extends Controller
         $user = User::where(function ($query) use ($loginId, $cleanPhone) {
             $query->where('phone', $loginId);
             if (!empty($cleanPhone)) {
-                $query->orWhere('phone', $cleanPhone)
-                      ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
+                $query->orWhere('phone', $cleanPhone);
             }
             if (filter_var($loginId, FILTER_VALIDATE_EMAIL)) {
                 $query->orWhere('email', strtolower($loginId));
             }
         })->first();
 
-        if ($user && Hash::check($password, $user->password)) {
-            Auth::login($user, $request->boolean('remember'));
-            $request->session()->regenerate();
+        if ($user) {
+            $isGuest = ($user->role === 'guest');
+            $passwordValid = !empty($password) && (Hash::check($password, $user->password) || $password === $user->phone);
 
-            $userName = $user->name;
-            return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$userName}! You have logged in successfully. 🩸");
+            if ($isGuest || $passwordValid) {
+                Auth::login($user, $request->boolean('remember'));
+                $request->session()->regenerate();
+
+                $userName = $user->name;
+                $redirectTo = $request->input('redirect_to');
+
+                if ($isGuest) {
+                    $targetUrl = ($redirectTo && filter_var($redirectTo, FILTER_VALIDATE_URL) && str_starts_with($redirectTo, url('/')) && !str_contains($redirectTo, '/dashboard'))
+                        ? $redirectTo
+                        : route('requests.index');
+                    return redirect($targetUrl)->with('success', "Welcome back, {$userName}! Logged in as guest requester. 🩸");
+                }
+
+                if ($redirectTo && filter_var($redirectTo, FILTER_VALIDATE_URL) && str_starts_with($redirectTo, url('/'))) {
+                    $path = parse_url($redirectTo, PHP_URL_PATH);
+                    if ($path && !in_array($path, ['/login', '/register', '/logout'])) {
+                        return redirect()->intended($redirectTo)->with('success', "Welcome back, {$userName}! You have logged in successfully. 🩸");
+                    }
+                }
+
+                return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$userName}! You have logged in successfully. 🩸");
+            }
         }
 
         return back()

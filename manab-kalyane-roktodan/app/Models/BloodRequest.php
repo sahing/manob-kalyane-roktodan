@@ -20,6 +20,8 @@ class BloodRequest extends Model
         'status',
         'created_by',
         'notes',
+        'fulfillment_notes',
+        'fulfilled_by_donor',
     ];
 
     protected $casts = [

@@ -45,6 +45,7 @@
         <div x-show="mode === 'login'">
             <form action="{{ route('login') }}" method="POST" class="space-y-4">
                 @csrf
+                <input type="hidden" name="redirect_to" value="{{ request()->get('redirect') ?: (url()->previous() != route('login') ? url()->previous() : '') }}">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase flex items-center justify-between">
                         <span>📱 Mobile Number (or Email)</span>
@@ -61,7 +62,7 @@
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Password</label>
                         <button type="button" @click="mode = 'forgot'" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline">Forgot Password?</button>
                     </div>
-                    <input type="password" name="password" required class="w-full bg-slate-100 dark:bg-slate-900 border @error('password') border-rose-500 focus:ring-rose-500 @else border-slate-300 dark:border-slate-700 focus:border-rose-500 @enderror rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none">
+                    <input type="password" name="password" placeholder="Leave empty for guest auto-login" class="w-full bg-slate-100 dark:bg-slate-900 border @error('password') border-rose-500 focus:ring-rose-500 @else border-slate-300 dark:border-slate-700 focus:border-rose-500 @enderror rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none">
                     @error('password')
                         <span class="text-rose-500 text-[11px] font-bold mt-1 block">{{ $message }}</span>
                     @enderror

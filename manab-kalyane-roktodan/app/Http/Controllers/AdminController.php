@@ -493,6 +493,7 @@ class AdminController extends Controller
             'label' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'permissions' => 'nullable|array',
+            'show_in_member_page' => 'nullable|boolean',
         ]);
 
         $permissions = $validated['permissions'] ?? [];
@@ -504,6 +505,7 @@ class AdminController extends Controller
                 'label' => $validated['label'],
                 'description' => $validated['description'] ?? null,
                 'permissions' => array_values($permissions),
+                'show_in_member_page' => $request->boolean('show_in_member_page'),
                 'is_system' => false,
             ]
         );

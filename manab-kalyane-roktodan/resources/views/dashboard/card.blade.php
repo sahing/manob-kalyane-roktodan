@@ -145,7 +145,7 @@
                 </div>
 
                 <div class="text-right text-[8px] text-slate-400 leading-tight">
-                    <span class="block text-slate-200 font-bold">Helpline: +91 98321 00000</span>
+                    <span class="block text-slate-200 font-bold">Helpline: {{ $helplinePhone ?? \App\Models\SiteContent::getValue('helpline_phone', '+91 98321 00000') }}</span>
                     <span class="text-rose-400 font-semibold">Bhagwangola Society</span>
                 </div>
             </div>
@@ -174,7 +174,7 @@
             </ul>
 
             <div class="pt-2 border-t border-slate-800 text-center text-[8px] text-slate-400">
-                <p class="font-bold text-white">Helpline: +91 98321 00000</p>
+                <p class="font-bold text-white">Helpline: {{ $helplinePhone ?? \App\Models\SiteContent::getValue('helpline_phone', '+91 98321 00000') }}</p>
                 <p class="text-[7px]">Bhagwangola-I & Bhagwangola-II Voluntary Blood Network</p>
             </div>
         </div>

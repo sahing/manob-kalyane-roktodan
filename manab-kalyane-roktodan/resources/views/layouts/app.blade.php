@@ -105,6 +105,32 @@
     
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Global Portal Chat Helper Functions -->
+    <script>
+        window.openPortalChat = function(details) {
+            let data = details || {};
+            if (details instanceof HTMLElement) {
+                const el = details;
+                if (el.dataset.details) {
+                    try { data = JSON.parse(el.dataset.details); } catch(e) { data = {}; }
+                } else {
+                    data = {
+                        requestId: el.dataset.requestId || null,
+                        patientName: el.dataset.patientName || '',
+                        name: el.dataset.name || el.dataset.patientName || 'Member',
+                        bloodGroup: el.dataset.bloodGroup || '',
+                        units: el.dataset.units || 1,
+                        hospital: el.dataset.hospital || '',
+                        location: el.dataset.location || '',
+                        phone: el.dataset.phone || '',
+                        notes: el.dataset.notes || ''
+                    };
+                }
+            }
+            window.dispatchEvent(new CustomEvent('open-portal-chat-modal', { detail: data }));
+        };
+    </script>
     
     <style>
         [x-cloak] { display: none !important; }
@@ -259,7 +285,75 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{ authModal: {{ $errors->any() ? 'true' : 'false' }}, authMode: 'login', shareOpen: false, mobileMenu: false, chatModalOpen: false, chatState: { requestId: null, phone: '', name: '', patientName: '', bloodGroup: '', hospital: '', location: '', notes: '', units: 1, messages: [], newMsg: '', loading: false } }">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-600 selection:text-white transition-colors duration-300" x-data="{
+    authModal: {{ $errors->any() ? 'true' : 'false' }},
+    authMode: 'login',
+    shareOpen: false,
+    mobileMenu: false,
+    chatModalOpen: false,
+    chatState: { requestId: null, phone: '', name: '', patientName: '', bloodGroup: '', hospital: '', location: '', notes: '', units: 1, messages: [], newMsg: '', loading: false, visitorName: localStorage.getItem('v_name') || '', visitorPhone: localStorage.getItem('v_phone') || '', needVisitorInfo: false },
+    openChat(details) {
+        this.chatState.requestId = details.requestId || null;
+        this.chatState.phone = details.phone || '';
+        this.chatState.name = details.name || details.patientName || 'Member';
+        this.chatState.patientName = details.patientName || '';
+        this.chatState.bloodGroup = details.bloodGroup || '';
+        this.chatState.hospital = details.hospital || '';
+        this.chatState.location = details.location || '';
+        this.chatState.notes = details.notes || '';
+        this.chatState.units = details.units || 1;
+        this.chatState.messages = [];
+        this.chatState.newMsg = '';
+        this.chatState.loading = true;
+        this.chatModalOpen = true;
+
+        const isLoggedIn = {{ Auth::check() ? 'true' : 'false' }};
+        if (!isLoggedIn && (!this.chatState.visitorName || !this.chatState.visitorPhone)) {
+            this.chatState.needVisitorInfo = true;
+            this.chatState.loading = false;
+            return;
+        } else {
+            this.chatState.needVisitorInfo = false;
+        }
+
+        const myPhone = isLoggedIn ? '{{ Auth::user()?->phone }}' : (this.chatState.visitorPhone || '');
+
+        fetch('/api/chat/messages?blood_request_id=' + (details.requestId || '') + '&phone=' + encodeURIComponent(details.phone || '') + '&my_phone=' + encodeURIComponent(myPhone))
+            .then(res => res.json())
+            .then(data => {
+                this.chatState.messages = data.messages || [];
+                this.chatState.loading = false;
+                setTimeout(() => {
+                    const box = document.getElementById('chatMessagesScroll');
+                    if (box) box.scrollTop = box.scrollHeight;
+                }, 100);
+            })
+            .catch(() => { this.chatState.loading = false; });
+    },
+    saveVisitorInfo() {
+        if (!this.chatState.visitorName.trim() || !this.chatState.visitorPhone.trim()) {
+            alert('Please enter your full name and 10-digit mobile number.');
+            return;
+        }
+        localStorage.setItem('v_name', this.chatState.visitorName.trim());
+        localStorage.setItem('v_phone', this.chatState.visitorPhone.trim());
+        this.chatState.needVisitorInfo = false;
+        this.openChat({
+            requestId: this.chatState.requestId,
+            phone: this.chatState.phone,
+            name: this.chatState.name,
+            patientName: this.chatState.patientName,
+            bloodGroup: this.chatState.bloodGroup,
+            hospital: this.chatState.hospital,
+            location: this.chatState.location,
+            notes: this.chatState.notes,
+            units: this.chatState.units
+        });
+    },
+    openPortalChat(details) {
+        window.openPortalChat(details);
+    }
+}" @open-portal-chat-modal.window="openChat($event.detail)">
 
     <!-- Top Helpline Bar -->
     <div class="bg-gradient-to-r from-rose-900 via-slate-900 to-rose-950 dark:from-brand-950 dark:via-slate-900 dark:to-brand-950 text-white text-xs py-2 px-3 sm:px-6 lg:px-8 shadow-sm relative z-50 overflow-hidden">
@@ -287,23 +381,23 @@
 
     <!-- Main Navigation Header -->
     <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 gap-1.5 sm:gap-2">
+        <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14 sm:h-16 gap-1 sm:gap-2">
                 
-                <!-- Brand Logo -->
-                <a href="{{ route('home') }}" class="flex items-center space-x-2.5 shrink-0 group relative" title="{{ $cmsOrganizationName }} — {{ $cmsTagline }}">
+                <!-- Brand Logo & Responsive Truncated Name -->
+                <a href="{{ route('home') }}" class="flex items-center space-x-1.5 sm:space-x-2.5 shrink min-w-0 group relative" title="{{ $cmsOrganizationName }} — {{ $cmsTagline }}">
                     @if($cmsLogo)
-                        <img src="{{ $cmsLogo }}" alt="{{ $cmsOrganizationName }}" class="h-8 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 shrink-0" :class="{ 'hidden': darkMode && '{{ $cmsDarkLogo }}' !== '' }">
+                        <img src="{{ $cmsLogo }}" alt="{{ $cmsOrganizationName }}" class="h-7 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 shrink-0" :class="{ 'hidden': darkMode && '{{ $cmsDarkLogo }}' !== '' }">
                         @if($cmsDarkLogo)
-                            <img src="{{ $cmsDarkLogo }}" alt="{{ $cmsOrganizationName }}" class="h-8 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 hidden shrink-0" :class="{ 'hidden': !darkMode }">
+                            <img src="{{ $cmsDarkLogo }}" alt="{{ $cmsOrganizationName }}" class="h-7 sm:h-9 w-auto object-contain transition duration-300 group-hover:scale-105 hidden shrink-0" :class="{ 'hidden': !darkMode }">
                         @endif
                     @else
-                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-rose-600 to-rose-500 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition duration-300 glow-red shrink-0">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current animate-heartbeat" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
+                        <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-rose-600 to-rose-500 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition duration-300 glow-red shrink-0">
+                            <svg class="w-3.5 h-3.5 sm:w-5 sm:h-5 fill-current animate-heartbeat" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>
                         </div>
                     @endif
-                    <div class="leading-tight brand-text-container">
-                        <span class="font-heading font-black text-sm sm:text-base lg:text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors block whitespace-nowrap">
+                    <div class="leading-tight brand-text-container min-w-0">
+                        <span class="font-heading font-black text-xs sm:text-base lg:text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors block truncate max-w-[125px] min-[360px]:max-w-[165px] min-[420px]:max-w-[220px] sm:max-w-none">
                             {{ $cmsOrganizationName }}
                         </span>
                         <span class="text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider text-rose-600 dark:text-rose-400 hidden sm:block whitespace-nowrap">
@@ -355,18 +449,14 @@
                 </nav>
 
                 <!-- Auth, Theme Toggle & Mobile Hamburger -->
-                <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
+                <div class="flex items-center space-x-1 shrink-0">
                     <!-- Light / Dark Theme Switch Button -->
-                    <button @click="darkMode = !darkMode" type="button" class="p-1.5 sm:p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1 text-xs font-bold shadow-sm" title="Toggle Light or Dark Theme">
+                    <button @click="darkMode = !darkMode" type="button" class="p-1.5 sm:p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center text-xs font-bold shadow-sm" title="Toggle Light or Dark Theme">
                         <template x-if="darkMode">
-                            <span class="flex items-center gap-1 text-amber-300">
-                                <span>☀️</span> <span class="hidden sm:inline text-xs font-bold text-amber-200">Light</span>
-                            </span>
+                            <span class="text-amber-300">☀️</span>
                         </template>
                         <template x-if="!darkMode">
-                            <span class="flex items-center gap-1 text-slate-800">
-                                <span>🌙</span> <span class="hidden sm:inline text-xs font-bold text-slate-800">Dark</span>
-                            </span>
+                            <span class="text-slate-800">🌙</span>
                         </template>
                     </button>
 
@@ -379,25 +469,25 @@
                         
                         <!-- Notifications Bell Icon -->
                         <a href="{{ route('dashboard') }}" class="relative p-1.5 sm:p-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center" title="Notifications">
-                            <span class="text-sm">🔔</span>
+                            <span class="text-xs sm:text-sm">🔔</span>
                             @if($unreadCount > 0)
-                                <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-extrabold flex items-center justify-center animate-bounce">
+                                <span class="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-rose-600 text-white text-[8px] sm:text-[9px] font-extrabold flex items-center justify-center animate-bounce">
                                     {{ $unreadCount }}
                                 </span>
                             @endif
                         </a>
 
-                        <!-- USER PROFILE & ADMIN ACCOUNT DROPDOWN (ICON-ONLY FOR MAX SPACE) -->
+                        <!-- USER PROFILE & ADMIN ACCOUNT DROPDOWN -->
                         <div class="relative" x-data="{ userDropdown: false }" @click.outside="userDropdown = false">
-                            <button @click="userDropdown = !userDropdown" type="button" class="p-1 sm:p-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-1 shadow-sm" title="{{ $user->name }} ({{ $user->role }})">
+                            <button @click="userDropdown = !userDropdown" type="button" class="p-1 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-0.5 shadow-sm" title="{{ $user->name }} ({{ $user->role }})">
                                 @if($user->avatar_url)
                                     <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover shrink-0 border border-rose-500/50">
                                 @else
-                                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-tr from-brand-700 to-rose-500 text-white text-[11px] font-extrabold flex items-center justify-center uppercase shrink-0 shadow-sm">
+                                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-tr from-brand-700 to-rose-500 text-white text-[10px] sm:text-[11px] font-extrabold flex items-center justify-center uppercase shrink-0 shadow-sm">
                                         {{ $bloodGroup ?: substr($user->name, 0, 1) }}
                                     </div>
                                 @endif
-                                <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" :class="{ 'rotate-180': userDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" :class="{ 'rotate-180': userDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
@@ -474,20 +564,20 @@
                         </div>
                     @else
                         <!-- SINGLE COMBINED AUTH BUTTON IN MENU -->
-                        <button @click="authModal = true; authMode = 'login'" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition flex items-center gap-1">
+                        <button @click="authModal = true; authMode = 'login'" class="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition flex items-center gap-1">
                             <span>Login</span>
                         </button>
                     @endauth
 
                     <!-- Mobile Hamburger Button -->
-                    <button @click="mobileMenu = !mobileMenu" type="button" class="lg:hidden p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition" aria-label="Toggle Navigation Menu">
+                    <button @click="mobileMenu = !mobileMenu" type="button" class="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition" aria-label="Toggle Navigation Menu">
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Navigation Drawer -->
+        <!-- Mobile Navigation Drawer: Modern App Sheet UI -->
         <div x-show="mobileMenu" x-cloak 
              @click.outside="mobileMenu = false"
              x-transition:enter="transition ease-out duration-200" 
@@ -496,61 +586,121 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100 translate-y-0"
              x-transition:leave-end="opacity-0 -translate-y-2"
-             class="lg:hidden glass-card border-t border-slate-200 dark:border-slate-800 px-4 py-4 space-y-2 text-sm font-bold max-h-[80vh] overflow-y-auto shadow-2xl">
+             class="lg:hidden glass-card border-t border-slate-200 dark:border-slate-800 p-3 sm:p-4 space-y-3 text-sm font-bold max-h-[85vh] overflow-y-auto shadow-2xl custom-scrollbar">
             
-            @if($headerMenuItems->count() > 0)
-                @foreach($headerMenuItems as $mItem)
-                    @if($mItem->children->count() > 0)
-                        <!-- Mobile Accordion Menu Item -->
-                        <div x-data="{ childOpen: false }" class="space-y-1">
-                            <button @click="childOpen = !childOpen" type="button" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition">
-                                <span>{{ $mItem->title }}</span>
-                                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': childOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-                            <div x-show="childOpen" x-cloak class="pl-4 space-y-1 border-l-2 border-rose-500/40 ml-2">
-                                @foreach($mItem->children as $child)
-                                    <a href="{{ $child->url }}" target="{{ $child->target }}" @click="mobileMenu = false" class="block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-rose-600 hover:text-white transition">
-                                        {{ $child->title }}
-                                    </a>
-                                @endforeach
+            @auth
+                <!-- Mobile User Profile Header Card -->
+                <div class="p-3 rounded-2xl bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800/90 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        @if(Auth::user()->avatar_url)
+                            <img src="{{ Auth::user()->avatar_url }}" class="w-9 h-9 rounded-xl object-cover border-2 border-rose-500 shadow-sm shrink-0" alt="{{ Auth::user()->name }}">
+                        @else
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-rose-600 text-white font-extrabold flex items-center justify-center border border-rose-400 shadow-sm text-xs shrink-0">
+                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                             </div>
+                        @endif
+                        <div class="overflow-hidden min-w-0">
+                            <div class="text-xs font-extrabold text-slate-900 dark:text-white truncate">{{ Auth::user()->name }}</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ Auth::user()->phone }}</div>
                         </div>
-                    @else
-                        <a href="{{ $mItem->url }}" target="{{ $mItem->target }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition {{ request()->is(ltrim($mItem->url, '/')) ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-slate-800/80 font-extrabold' : '' }}">
-                            {{ $mItem->title }}
-                        </a>
-                    @endif
-                @endforeach
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        @if(Auth::user()->canAccessAdmin())
+                            <a href="{{ route('admin.dashboard') }}" @click="mobileMenu = false" class="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold text-[10px] border border-amber-500/30">
+                                ⚙️ Admin
+                            </a>
+                        @else
+                            <a href="{{ route('dashboard') }}" @click="mobileMenu = false" class="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] border border-rose-500/30">
+                                📊 Portal
+                            </a>
+                        @endif
+                    </div>
+                </div>
             @else
-                <a href="{{ route('home') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Home</a>
-                <a href="{{ route('donors.search') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Find Donors</a>
-                <a href="{{ route('requests.index') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Requests</a>
-                <a href="{{ route('blog.index') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Health & Blog</a>
-                <a href="{{ route('stories.index') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Donor Stories</a>
-                <a href="{{ route('donate') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Donate / Support</a>
-                <a href="{{ route('members') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Committee</a>
-                <a href="{{ route('gallery') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">Gallery</a>
+                <button @click="authModal = true; authMode = 'login'; mobileMenu = false" class="w-full py-2.5 rounded-xl font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white text-center shadow-md text-xs flex items-center justify-center gap-1.5">
+                    <span>🔑</span> Sign In / Register Donor Account
+                </button>
+            @endauth
+
+            <!-- Quick App Grid Tiles -->
+            <div>
+                <div class="text-[10px] uppercase font-extrabold tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 px-1">
+                    Quick Navigation
+                </div>
+                <div class="grid grid-cols-4 gap-1.5 text-center">
+                    <a href="{{ route('home') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">🏠</span>
+                        <span class="truncate w-full font-bold">Home</span>
+                    </a>
+                    <a href="{{ route('requests.index') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition flex flex-col items-center justify-center gap-1 border border-rose-500/20 text-[11px]">
+                        <span class="text-base">🚨</span>
+                        <span class="truncate w-full font-extrabold">Requests</span>
+                    </a>
+                    <a href="{{ route('donors.search') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">🔍</span>
+                        <span class="truncate w-full font-bold">Donors</span>
+                    </a>
+                    <a href="{{ route('stories.index') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">🩸</span>
+                        <span class="truncate w-full font-bold">Stories</span>
+                    </a>
+                    <a href="{{ route('blog.index') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">🏥</span>
+                        <span class="truncate w-full font-bold">Health</span>
+                    </a>
+                    <a href="{{ route('donate') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition flex flex-col items-center justify-center gap-1 border border-emerald-500/20 text-[11px]">
+                        <span class="text-base">💝</span>
+                        <span class="truncate w-full font-bold">Donate</span>
+                    </a>
+                    <a href="{{ route('members') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">👥</span>
+                        <span class="truncate w-full font-bold">Team</span>
+                    </a>
+                    <a href="{{ route('gallery') }}" @click="mobileMenu = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition flex flex-col items-center justify-center gap-1 border border-slate-200 dark:border-slate-800 text-[11px]">
+                        <span class="text-base">🖼️</span>
+                        <span class="truncate w-full font-bold">Gallery</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Dynamic Custom CMS Menu Links -->
+            @if($headerMenuItems->count() > 0)
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-2 space-y-1">
+                    @foreach($headerMenuItems as $mItem)
+                        @if($mItem->children->count() > 0)
+                            <!-- Mobile Accordion Menu Item -->
+                            <div x-data="{ childOpen: false }" class="space-y-1">
+                                <button @click="childOpen = !childOpen" type="button" class="w-full flex items-center justify-between px-3 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition text-xs font-bold">
+                                    <span>{{ $mItem->title }}</span>
+                                    <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': childOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                                <div x-show="childOpen" x-cloak class="pl-4 space-y-1 border-l-2 border-rose-500/40 ml-2">
+                                    @foreach($mItem->children as $child)
+                                        <a href="{{ $child->url }}" target="{{ $child->target }}" @click="mobileMenu = false" class="block px-3 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-rose-600 hover:text-white transition">
+                                            {{ $child->title }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @else
+                            <a href="{{ $mItem->url }}" target="{{ $mItem->target }}" @click="mobileMenu = false" class="block px-3 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition text-xs font-bold {{ request()->is(ltrim($mItem->url, '/')) ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-slate-800/80' : '' }}">
+                                {{ $mItem->title }}
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
             @endif
 
             @auth
-                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
-                    <div class="px-3 py-1 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Account Operations</div>
-                    @if(Auth::user()->canAccessAdmin())
-                        <a href="{{ route('admin.dashboard') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold border border-amber-500/30">⚙️ Admin Command Center</a>
-                    @endif
-                    <a href="{{ route('dashboard') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">📊 Dashboard</a>
-                    <a href="{{ route('dashboard.profile') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">👤 My Profile</a>
-                    <a href="{{ route('dashboard.card') }}" @click="mobileMenu = false" class="block px-3 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200">🎴 Donor ID Card</a>
+                <!-- Logout Footer Action -->
+                <div class="border-t border-slate-200 dark:border-slate-800 pt-2">
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="w-full text-left px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 font-bold">🚪 Logout</button>
+                        <button type="submit" class="w-full text-center py-2 px-3 rounded-xl text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-600 hover:text-white text-xs font-extrabold transition border border-rose-500/20 flex items-center justify-center gap-1.5">
+                            <span>🚪</span> Sign Out / Logout
+                        </button>
                     </form>
-                </div>
-            @else
-                <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <button @click="authModal = true; authMode = 'login'; mobileMenu = false" class="w-full py-2.5 rounded-xl font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white text-center shadow-md">
-                        Login / Sign Up
-                    </button>
                 </div>
             @endauth
         </div>
@@ -710,6 +860,8 @@
 
                 <form action="{{ route('login') }}" method="POST" class="space-y-4">
                     @csrf
+                    <input type="hidden" name="redirect_to" value="{{ request()->fullUrl() }}">
+
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase flex items-center justify-between">
                             <span>📱 Mobile Number (or Email)</span>
@@ -722,7 +874,7 @@
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Password</label>
                             <button type="button" @click="authMode = 'forgot'" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline">Forgot Password?</button>
                         </div>
-                        <input type="password" name="password" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        <input type="password" name="password" placeholder="Leave empty for guest auto-login" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                     </div>
                     <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-extrabold py-3 rounded-xl hover:opacity-95 shadow-md transition">
                         Sign In via Mobile / Email
@@ -1025,6 +1177,9 @@
                         _token: '{{ csrf_token() }}'
                     })], { type: 'application/json' }));
                 } catch (err) {}
+            }
+        });
+    </script>
     <!-- Request Detail & In-Portal Live Chat Modal -->
     <div x-show="chatModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
         <div class="glass-card max-w-2xl w-full rounded-3xl border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative" @click.away="chatModalOpen = false">
@@ -1072,8 +1227,32 @@
                 </div>
             </template>
 
+            <!-- Guest Visitor Contact Information Gate -->
+            <template x-if="chatState.needVisitorInfo">
+                <div class="p-6 bg-slate-900 text-white space-y-4">
+                    <div class="text-center space-y-1">
+                        <div class="text-3xl">👤</div>
+                        <h4 class="font-extrabold text-base text-white">Enter Your Name & Mobile Number to Chat</h4>
+                        <p class="text-xs text-slate-300">You are browsing as a guest. Please provide your name and phone number so the patient/donor can communicate with you.</p>
+                    </div>
+                    <form @submit.prevent="saveVisitorInfo()" class="space-y-3 max-w-md mx-auto">
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Your Full Name *</label>
+                            <input type="text" x-model="chatState.visitorName" required placeholder="e.g. Rahul Das" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">10-Digit Mobile Phone Number *</label>
+                            <input type="tel" x-model="chatState.visitorPhone" required placeholder="e.g. 9832100000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full py-3 rounded-xl font-extrabold text-xs bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-lg transition hover:opacity-95">
+                            Start Portal Chatting 💬
+                        </button>
+                    </form>
+                </div>
+            </template>
+
             <!-- Conversation History Messages Stream -->
-            <div id="chatMessagesScroll" class="flex-1 p-4 overflow-y-auto space-y-3 min-h-[220px] max-h-[350px] bg-slate-50 dark:bg-slate-950/80">
+            <div x-show="!chatState.needVisitorInfo" id="chatMessagesScroll" class="flex-1 p-4 overflow-y-auto space-y-3 min-h-[220px] max-h-[350px] bg-slate-50 dark:bg-slate-950/80">
                 <template x-if="chatState.loading">
                     <div class="text-center py-8 text-xs text-slate-400">Loading conversation history thread...</div>
                 </template>
@@ -1095,7 +1274,7 @@
             </div>
 
             <!-- Send Message Input Box -->
-            <div class="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+            <div x-show="!chatState.needVisitorInfo" class="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
                 <form @submit.prevent="sendPortalMessage()" class="flex items-center space-x-2">
                     <input type="text" x-model="chatState.newMsg" placeholder="Type your message to communicate via portal..." class="flex-1 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
                     <button type="submit" class="px-4 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md hover:opacity-95 transition glow-red shrink-0 flex items-center gap-1">
@@ -1109,35 +1288,26 @@
     <!-- JavaScript Helper Functions for Portal Chat & Request Details -->
     <script>
         window.openPortalChat = function(details) {
-            const appEl = document.body;
-            if (!appEl || !window.Alpine) return;
-            const alpine = Alpine.$data(appEl);
-            if (!alpine) return;
-            alpine.chatState.requestId = details.requestId || null;
-            alpine.chatState.phone = details.phone || '';
-            alpine.chatState.name = details.name || details.patientName || 'Member';
-            alpine.chatState.patientName = details.patientName || '';
-            alpine.chatState.bloodGroup = details.bloodGroup || '';
-            alpine.chatState.hospital = details.hospital || '';
-            alpine.chatState.location = details.location || '';
-            alpine.chatState.notes = details.notes || '';
-            alpine.chatState.units = details.units || 1;
-            alpine.chatState.messages = [];
-            alpine.chatState.newMsg = '';
-            alpine.chatState.loading = true;
-            alpine.chatModalOpen = true;
-
-            fetch('/api/chat/messages?blood_request_id=' + (details.requestId || '') + '&phone=' + encodeURIComponent(details.phone || ''))
-                .then(res => res.json())
-                .then(data => {
-                    alpine.chatState.messages = data.messages || [];
-                    alpine.chatState.loading = false;
-                    setTimeout(() => {
-                        const box = document.getElementById('chatMessagesScroll');
-                        if (box) box.scrollTop = box.scrollHeight;
-                    }, 100);
-                })
-                .catch(() => { alpine.chatState.loading = false; });
+            let data = details || {};
+            if (details instanceof HTMLElement) {
+                const el = details;
+                if (el.dataset.details) {
+                    try { data = JSON.parse(el.dataset.details); } catch(e) { data = {}; }
+                } else {
+                    data = {
+                        requestId: el.dataset.requestId || null,
+                        patientName: el.dataset.patientName || '',
+                        name: el.dataset.name || el.dataset.patientName || 'Member',
+                        bloodGroup: el.dataset.bloodGroup || '',
+                        units: el.dataset.units || 1,
+                        hospital: el.dataset.hospital || '',
+                        location: el.dataset.location || '',
+                        phone: el.dataset.phone || '',
+                        notes: el.dataset.notes || ''
+                    };
+                }
+            }
+            window.dispatchEvent(new CustomEvent('open-portal-chat-modal', { detail: data }));
         };
 
         window.sendPortalMessage = function() {
@@ -1146,11 +1316,19 @@
             const alpine = Alpine.$data(appEl);
             if (!alpine || !alpine.chatState.newMsg.trim()) return;
 
+            const isLoggedIn = {{ Auth::check() ? 'true' : 'false' }};
+            if (!isLoggedIn && (!alpine.chatState.visitorName || !alpine.chatState.visitorPhone)) {
+                alpine.chatState.needVisitorInfo = true;
+                return;
+            }
+
             const payload = {
                 message: alpine.chatState.newMsg,
                 blood_request_id: alpine.chatState.requestId,
                 receiver_phone: alpine.chatState.phone,
                 receiver_name: alpine.chatState.name,
+                sender_name: alpine.chatState.visitorName || null,
+                sender_phone: alpine.chatState.visitorPhone || null,
                 _token: '{{ csrf_token() }}'
             };
 

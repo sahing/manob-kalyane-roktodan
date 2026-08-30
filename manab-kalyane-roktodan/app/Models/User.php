@@ -147,6 +147,14 @@ class User extends Authenticatable
         return in_array(strtolower(trim($this->role ?? '')), ['admin', 'member']) || $this->canAccessAdmin();
     }
 
+    public function canManageBloodRequest(BloodRequest $bloodRequest): bool
+    {
+        if ($this->isAdmin() || $this->isMember() || $this->canAccessAdmin()) {
+            return true;
+        }
+        return (int)$this->id === (int)$bloodRequest->created_by;
+    }
+
     public function getLoyaltyRankAttribute(): string
     {
         $points = $this->loyalty_points;
@@ -192,6 +200,58 @@ class User extends Authenticatable
         return 'MKRD-REF-' . str_pad($id, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Sync committee member status when user role changes.
+     */
+    public function syncCommitteeMemberStatus()
+    {
+        $roleName = strtolower(trim($this->role ?? 'user'));
+        $roleObj = $this->getRoleObject();
+        $label = $roleObj?->label ?? ucfirst(str_replace('_', ' ', $roleName));
+
+        // Roles configured to appear on /members page
+        $committeeRoles = Role::where('show_in_member_page', true)->pluck('name')->toArray();
+
+        $existingMember = Member::where('phone', $this->phone)
+            ->orWhere('name', $this->name)
+            ->first();
+
+        if (in_array($roleName, $committeeRoles)) {
+            $roleTitle = match($roleName) {
+                'core_member' => 'Executive Core Member',
+                'member' => 'Committee Member',
+                'admin' => 'Administrator & Governing Lead',
+                'finance_manager' => 'Finance & Pledge Coordinator',
+                'blood_coordinator' => 'Emergency Blood Coordinator',
+                'moderator' => 'Operations Moderator',
+                default => $label
+            };
+
+            if ($existingMember) {
+                $existingMember->update([
+                    'name' => $this->name,
+                    'role_title' => $roleTitle,
+                    'phone' => $this->phone,
+                    'is_active' => true,
+                ]);
+            } else {
+                Member::create([
+                    'name' => $this->name,
+                    'role_title' => $roleTitle,
+                    'phone' => $this->phone,
+                    'sort_order' => Member::count() + 1,
+                    'is_active' => true,
+                ]);
+            }
+        } else {
+            if ($existingMember) {
+                $existingMember->update([
+                    'is_active' => false,
+                ]);
+            }
+        }
+    }
+
     public static function boot()
     {
         parent::boot();
@@ -228,6 +288,7 @@ class User extends Authenticatable
 
         static::saved(function ($user) {
             $user->unsetRelation('roleModel');
+            $user->syncCommitteeMemberStatus();
             if (\Illuminate\Support\Facades\Auth::check() && \Illuminate\Support\Facades\Auth::id() === $user->id) {
                 \Illuminate\Support\Facades\Auth::setUser($user->fresh(['roleModel']));
             }
