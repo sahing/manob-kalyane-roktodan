@@ -40,6 +40,8 @@
             justify-content: center !important;
             gap: 8mm !important;
             margin-top: 10mm !important;
+            background: transparent !important;
+            padding: 0 !important;
         }
 
         /* CR80 Physical Print Specs: 85.6mm x 53.98mm */
@@ -54,12 +56,12 @@
             padding: 3.5mm 4.5mm !important;
             box-shadow: none !important;
             transform: none !important;
-            display: flex !important;
             page-break-inside: avoid !important;
         }
 
-        .print-force-visible {
-            display: flex !important;
+        /* Strictly respect selected view mode during printing */
+        [style*="display: none"], [x-cloak] {
+            display: none !important;
         }
     }
 </style>
@@ -86,9 +88,10 @@
                 </button>
             </div>
 
-            <!-- Download HD PNG Image -->
+            <!-- Download HD PNG Image Button -->
             <button type="button" onclick="downloadActiveCardPNG(this)" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition flex items-center gap-1.5">
-                <span>🖼️</span> Download HD Image
+                <span>🖼️</span>
+                <span x-text="viewMode === 'front' ? 'Download Front PNG' : (viewMode === 'back' ? 'Download Back PNG' : 'Download Both PNG')">Download HD Image</span>
             </button>
 
             <!-- Share Card Button -->
@@ -96,9 +99,10 @@
                 <span>📲</span> Share Card
             </button>
 
-            <!-- Print CR80 Button -->
+            <!-- Print Selected Card Button -->
             <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 transition flex items-center gap-1">
-                🖨️ Print Card (CR80)
+                <span>🖨️</span>
+                <span x-text="viewMode === 'front' ? 'Print Front Card' : (viewMode === 'back' ? 'Print Back Card' : 'Print Both Cards')">Print Card (CR80)</span>
             </button>
         </div>
     </div>
@@ -109,7 +113,7 @@
         <!-- FRONT SIDE DIGITAL DONOR ID CARD -->
         <div id="card-front-side" 
              x-show="viewMode === 'both' || viewMode === 'front'" 
-             class="print-force-visible donor-card-box relative bg-gradient-to-br from-slate-900 via-rose-950 to-slate-950 border-2 border-rose-500/60 rounded-3xl p-4 sm:p-5 text-left shadow-2xl overflow-hidden transform transition duration-300 mx-auto flex flex-col justify-between">
+             class="donor-card-box relative bg-gradient-to-br from-slate-900 via-rose-950 to-slate-950 border-2 border-rose-500/60 rounded-3xl p-4 sm:p-5 text-left shadow-2xl overflow-hidden transform transition duration-300 mx-auto flex flex-col justify-between">
             
             <!-- Background Metallic Watermark Seal -->
             <div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-rose-600/10 border border-rose-500/20 pointer-events-none"></div>
@@ -188,7 +192,7 @@
         <!-- BACK SIDE DIGITAL DONOR ID CARD -->
         <div id="card-back-side" 
              x-show="viewMode === 'both' || viewMode === 'back'" 
-             class="print-force-visible donor-card-box relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-2 border-slate-700 rounded-3xl p-4 sm:p-5 text-left shadow-2xl overflow-hidden transform transition duration-300 mx-auto flex flex-col justify-between">
+             class="donor-card-box relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-2 border-slate-700 rounded-3xl p-4 sm:p-5 text-left shadow-2xl overflow-hidden transform transition duration-300 mx-auto flex flex-col justify-between">
             
             <div class="border-b border-slate-800 pb-1.5 mb-2 flex justify-between items-center">
                 <span class="text-[9px] sm:text-[10px] font-extrabold text-white uppercase tracking-wider">Emergency Terms & Donor Guidelines</span>
@@ -254,7 +258,7 @@
     <!-- Printable Instructions Tip -->
     <div class="mt-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 no-print max-w-lg mx-auto">
         <span class="font-extrabold text-slate-900 dark:text-white block mb-1">💡 Printing & Image Download Info:</span>
-        <p>Both Front and Back card sides will print automatically at standard CR80 card dimensions (85.6mm × 53.98mm). Click <b>Download HD Image</b> to export high-res PNG images.</p>
+        <p>Selected card side(s) will print automatically at standard CR80 card dimensions (85.6mm × 53.98mm). Switch tabs above to print or download Front, Back, or Both sides.</p>
     </div>
 </div>
 
