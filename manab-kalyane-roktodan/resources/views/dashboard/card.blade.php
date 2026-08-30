@@ -3,7 +3,7 @@
 @section('title', 'Official Digital Donor ID Card — Manab Kalyane Rokto Dan')
 
 @section('content')
-<!-- Include html2canvas & qrcodejs for 100% reliable local PNG generation without CORS issues -->
+<!-- Include html2canvas & qrcodejs for high-resolution local PNG generation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 
@@ -135,6 +135,8 @@
                 <div class="flex items-center gap-2.5 min-w-0">
                     @if(!empty($avatarDataUri))
                         <img src="{{ $avatarDataUri }}" alt="{{ $user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-rose-500 shadow shrink-0">
+                    @elseif($user->avatar_url)
+                        <img src="{{ $user->avatar_url }}" crossorigin="anonymous" alt="{{ $user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-rose-500 shadow shrink-0">
                     @else
                         <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-brand-700 to-rose-500 text-white font-black text-sm sm:text-base flex items-center justify-center border border-rose-400/40 shadow shrink-0">
                             {{ strtoupper(substr($user->name, 0, 1)) }}
@@ -164,9 +166,11 @@
             <!-- Card Footer with Verification QR Code -->
             <div class="pt-1.5 border-t border-slate-800/90 flex items-center justify-between relative z-10">
                 <div class="flex items-center gap-2">
-                    <!-- Pure Inline QR Code Container -->
+                    <!-- Inline QR Code Container -->
                     <div class="bg-white p-1 rounded-lg border border-slate-700 shadow shrink-0">
-                        <div id="qrcode-box" class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"></div>
+                        <div id="qrcode-box" class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($verificationUrl) }}" crossorigin="anonymous" alt="QR Code" class="w-7 h-7 sm:w-8 sm:h-8">
+                        </div>
                     </div>
                     <div class="text-[7px] sm:text-[8px] text-slate-400 leading-tight">
                         <span class="font-bold text-slate-200 block">Scan to Verify</span>
@@ -254,12 +258,13 @@
     </div>
 </div>
 
-<!-- Pure JS Client-Side QR Code & HD PNG Downloader -->
+<!-- JS Client-Side QR Code & HD PNG Downloader -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const qrContainer = document.getElementById("qrcode-box");
-        if (qrContainer) {
+        if (qrContainer && typeof QRCode !== 'undefined') {
             try {
+                qrContainer.innerHTML = '';
                 new QRCode(qrContainer, {
                     text: "{{ $verificationUrl }}",
                     width: 32,
@@ -269,16 +274,19 @@
                     correctLevel : QRCode.CorrectLevel.M
                 });
             } catch (e) {
-                console.error("QR Code generation error:", e);
+                console.warn("QR Code JS fallback triggered:", e);
             }
         }
     });
 
     function downloadActiveCardPNG(btnElement) {
-        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
-        const viewMode = alpineData ? alpineData.viewMode : 'both';
-        let exportTarget;
+        let viewMode = 'both';
+        try {
+            const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+            if (alpineData) viewMode = alpineData.viewMode;
+        } catch(e) {}
 
+        let exportTarget;
         if (viewMode === 'front') {
             exportTarget = document.getElementById('card-front-side');
         } else if (viewMode === 'back') {
@@ -292,15 +300,18 @@
         const originalText = btnElement ? btnElement.innerHTML : 'Download HD Image';
         if (btnElement) btnElement.innerHTML = '⏳ Exporting HD PNG...';
 
-        const opt = {
+        if (typeof html2canvas === 'undefined') {
+            if (btnElement) btnElement.innerHTML = originalText;
+            window.print();
+            return;
+        }
+
+        html2canvas(exportTarget, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
-            backgroundColor: viewMode === 'both' ? '#020617' : null,
-            ignoreElements: (element) => element.classList.contains('no-print')
-        };
-
-        html2canvas(exportTarget, opt).then(canvas => {
+            backgroundColor: viewMode === 'both' ? '#020617' : null
+        }).then(canvas => {
             try {
                 const imageURI = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
@@ -311,7 +322,7 @@
                 document.body.removeChild(link);
             } catch (e) {
                 console.error("Canvas toDataURL failed:", e);
-                alert("Image download failed due to browser security restrictions. Please use Print Card (CR80) to save as PDF.");
+                alert("Please click Print Card (CR80) to save as PDF.");
             }
             if (btnElement) btnElement.innerHTML = originalText;
         }).catch(err => {

@@ -100,23 +100,35 @@ class DashboardController extends Controller
         $helplinePhone = SiteContent::getValue('helpline_phone', '+91 98321 00000');
 
         $avatarDataUri = null;
-        if (!empty($user->avatar_url)) {
+        if (!empty($user->avatar_url) && filter_var($user->avatar_url, FILTER_VALIDATE_URL)) {
             try {
-                $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+                $ctx = stream_context_create([
+                    'http' => [
+                        'timeout' => 1.5,
+                        'ignore_errors' => true,
+                        'header' => "User-Agent: Mozilla/5.0\r\n"
+                    ]
+                ]);
                 $imgData = @file_get_contents($user->avatar_url, false, $ctx);
-                if ($imgData !== false) {
-                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_buffer($finfo, $imgData) ?: 'image/png';
-                    finfo_close($finfo);
+                if ($imgData !== false && strlen($imgData) > 0) {
+                    $mimeType = 'image/png';
+                    if (function_exists('finfo_open')) {
+                        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+                        if ($finfo) {
+                            $mimeType = @finfo_buffer($finfo, $imgData) ?: 'image/png';
+                            @finfo_close($finfo);
+                        }
+                    }
                     $avatarDataUri = 'data:' . $mimeType . ';base64,' . base64_encode($imgData);
                 }
             } catch (\Throwable $e) {
-                // Ignore failure
+                $avatarDataUri = null;
             }
         }
 
         return view('dashboard.card', compact('user', 'cardId', 'totalDonations', 'verificationUrl', 'helplinePhone', 'avatarDataUri'));
     }
+
 
 
     public function showCertificate($id)
