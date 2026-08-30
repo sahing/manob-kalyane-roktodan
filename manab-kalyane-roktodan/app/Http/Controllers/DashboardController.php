@@ -99,8 +99,25 @@ class DashboardController extends Controller
         $verificationUrl = route('verify.show', ['code' => $cardId]);
         $helplinePhone = SiteContent::getValue('helpline_phone', '+91 98321 00000');
 
-        return view('dashboard.card', compact('user', 'cardId', 'totalDonations', 'verificationUrl', 'helplinePhone'));
+        $avatarDataUri = null;
+        if (!empty($user->avatar_url)) {
+            try {
+                $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+                $imgData = @file_get_contents($user->avatar_url, false, $ctx);
+                if ($imgData !== false) {
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_buffer($finfo, $imgData) ?: 'image/png';
+                    finfo_close($finfo);
+                    $avatarDataUri = 'data:' . $mimeType . ';base64,' . base64_encode($imgData);
+                }
+            } catch (\Throwable $e) {
+                // Ignore failure
+            }
+        }
+
+        return view('dashboard.card', compact('user', 'cardId', 'totalDonations', 'verificationUrl', 'helplinePhone', 'avatarDataUri'));
     }
+
 
     public function showCertificate($id)
     {

@@ -133,8 +133,8 @@
             <!-- Card Body Grid -->
             <div class="flex items-center justify-between gap-2.5 mb-2 relative z-10">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    @if($user->avatar_url)
-                        <img src="{{ $user->avatar_url }}" crossorigin="anonymous" alt="{{ $user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-rose-500 shadow shrink-0">
+                    @if(!empty($avatarDataUri))
+                        <img src="{{ $avatarDataUri }}" alt="{{ $user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-rose-500 shadow shrink-0">
                     @else
                         <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-brand-700 to-rose-500 text-white font-black text-sm sm:text-base flex items-center justify-center border border-rose-400/40 shadow shrink-0">
                             {{ strtoupper(substr($user->name, 0, 1)) }}
@@ -259,14 +259,18 @@
     document.addEventListener('DOMContentLoaded', () => {
         const qrContainer = document.getElementById("qrcode-box");
         if (qrContainer) {
-            new QRCode(qrContainer, {
-                text: "{{ $verificationUrl }}",
-                width: 32,
-                height: 32,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
+            try {
+                new QRCode(qrContainer, {
+                    text: "{{ $verificationUrl }}",
+                    width: 32,
+                    height: 32,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                console.error("QR Code generation error:", e);
+            }
         }
     });
 
@@ -288,24 +292,32 @@
         const originalText = btnElement ? btnElement.innerHTML : 'Download HD Image';
         if (btnElement) btnElement.innerHTML = '⏳ Exporting HD PNG...';
 
-        html2canvas(exportTarget, {
-            scale: 2.5, // 300 DPI Ultra Clear Resolution
+        const opt = {
+            scale: 2,
             useCORS: true,
-            allowTaint: false,
-            backgroundColor: viewMode === 'both' ? '#020617' : null
-        }).then(canvas => {
-            const imageURI = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
-            link.href = imageURI;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            allowTaint: true,
+            backgroundColor: viewMode === 'both' ? '#020617' : null,
+            ignoreElements: (element) => element.classList.contains('no-print')
+        };
+
+        html2canvas(exportTarget, opt).then(canvas => {
+            try {
+                const imageURI = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `Donor_Card_${viewMode.toUpperCase()}_{{ $cardId }}.png`;
+                link.href = imageURI;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("Canvas toDataURL failed:", e);
+                alert("Image download failed due to browser security restrictions. Please use Print Card (CR80) to save as PDF.");
+            }
             if (btnElement) btnElement.innerHTML = originalText;
         }).catch(err => {
-            console.error('Download error:', err);
+            console.error('html2canvas error:', err);
             if (btnElement) btnElement.innerHTML = originalText;
-            alert('Unable to generate PNG image automatically. Please click Print Card (CR80) to save as PDF.');
+            alert('Unable to capture card. Please use Print Card (CR80) to save as PDF.');
         });
     }
 </script>
