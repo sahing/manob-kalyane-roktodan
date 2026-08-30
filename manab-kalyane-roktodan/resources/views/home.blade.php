@@ -297,7 +297,7 @@
 </div>
 
 <!-- SECTION 3: Live Emergency Requests Grid -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-200 dark:border-slate-800/60">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-200 dark:border-slate-800/60" x-data="{ inquiryModal: false, selectedPatientName: '', selectedBloodGroup: '' }">
     <div class="flex items-center justify-between mb-8">
         <div>
             <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
@@ -351,24 +351,34 @@
                         <span class="font-bold text-rose-600 dark:text-rose-400">Emergency Case</span>
                     </div>
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <button type="button" onclick="openPortalChat({{ json_encode([
-                            'requestId' => $req->id,
-                            'patientName' => $req->patient_name,
-                            'bloodGroup' => $req->blood_group,
-                            'units' => $req->units_required,
-                            'hospital' => $req->hospital_name,
-                            'location' => $req->location,
-                            'phone' => $req->contact_number,
-                            'notes' => $req->notes ?? ''
-                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center justify-center gap-1 shadow-md">
+                        <button type="button" onclick="window.openPortalChat(this)"
+                            data-request-id="{{ $req->id }}"
+                            data-patient-name="{{ $req->patient_name }}"
+                            data-blood-group="{{ $req->blood_group }}"
+                            data-units="{{ $req->units_required }}"
+                            data-hospital="{{ $req->hospital_name }}"
+                            data-location="{{ $req->location }}"
+                            data-phone="{{ $req->contact_number }}"
+                            data-notes="{{ $req->notes ?? '' }}"
+                            class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-brand-600 text-white hover:opacity-95 transition flex items-center justify-center gap-1 shadow-md">
                             👁️ View Details & Chat
                         </button>
-                        <a href="tel:{{ $req->contact_number }}" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow-md">
-                            📞 Call
-                        </a>
-                        <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $req->contact_number) }}?text=Hello,%20responding%20from%20Manab%20Kalyane%20Rokto%20Dan%20regarding%20your%20emergency%20blood%20request%20for%20{{ urlencode($req->patient_name) }}%20({{ urlencode($req->blood_group) }})" target="_blank" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
-                            💬 WA
-                        </a>
+                        
+                        @if($inquiryGatePassed)
+                            <a href="tel:{{ $req->contact_number }}" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow-md">
+                                📞 Call
+                            </a>
+                            <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $req->contact_number) }}?text=Hello,%20responding%20from%20Manab%20Kalyane%20Rokto%20Dan%20regarding%20your%20emergency%20blood%20request%20for%20{{ urlencode($req->patient_name) }}%20({{ urlencode($req->blood_group) }})" target="_blank" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
+                                💬 WA
+                            </a>
+                        @else
+                            <button type="button" @click="selectedPatientName = '{{ addslashes($req->patient_name) }}'; selectedBloodGroup = '{{ $req->blood_group }}'; inquiryModal = true" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow-md">
+                                📞 Call
+                            </button>
+                            <button type="button" @click="selectedPatientName = '{{ addslashes($req->patient_name) }}'; selectedBloodGroup = '{{ $req->blood_group }}'; inquiryModal = true" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition flex items-center gap-1">
+                                💬 WA
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -377,6 +387,34 @@
                 No emergency blood requests currently pending.
             </div>
         @endforelse
+    </div>
+
+    <!-- Inquiry Gate Modal for Unlocking Contact Phone -->
+    <div x-show="inquiryModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-card max-w-md w-full p-6 sm:p-8 rounded-3xl border border-slate-300 dark:border-slate-800 relative shadow-2xl">
+            <button @click="inquiryModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
+
+            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mb-1">Enter Phone to Connect</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mb-4">Please enter your contact details to connect via Call or WhatsApp with <span class="text-rose-600 dark:text-rose-400 font-bold" x-text="selectedPatientName ? selectedPatientName + ' (' + selectedBloodGroup + ')' : 'emergency blood request'"></span>.</p>
+
+            <form action="{{ route('inquiry.submit') }}" method="POST" class="space-y-4">
+                @csrf
+                <input type="hidden" name="donor_name" :value="selectedPatientName">
+                <input type="hidden" name="blood_group" :value="selectedBloodGroup">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">Your Full Name</label>
+                    <input type="text" name="name" required placeholder="Enter your full name" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">Your Phone Number</label>
+                    <input type="tel" name="phone" required placeholder="Enter 10-digit mobile number" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-rose-600 text-white font-bold py-3 rounded-xl hover:opacity-95 shadow-md transition">
+                    Unlock & Connect Directly
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 

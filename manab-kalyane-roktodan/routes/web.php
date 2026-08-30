@@ -27,6 +27,9 @@ Route::get('/donor/{id}', [DonorController::class, 'show'])->name('donors.show')
 Route::post('/inquiry', [DonorController::class, 'submitInquiry'])->name('inquiry.submit');
 
 Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
+Route::post('/requests', [RequestController::class, 'store'])->name('requests.store');
+Route::redirect('/request-blood', '/requests');
+Route::redirect('/request', '/requests');
 
 Route::get('/donate', [PledgeController::class, 'index'])->name('donate');
 Route::post('/donate', [PledgeController::class, 'store'])->name('donate.store');
@@ -54,14 +57,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.forgot');
+    Route::post('/support/account-issue', [AuthController::class, 'submitAccountSupport'])->name('support.account-issue');
 });
 
 // Authenticated User Routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::post('/requests', [RequestController::class, 'store'])->name('requests.store');
     Route::post('/requests/{id}/status', [RequestController::class, 'updateStatus'])->name('requests.update-status');
+    Route::put('/requests/{id}', [RequestController::class, 'update'])->name('requests.update');
 
     // Story Comments
     Route::post('/stories/{id}/comments', [StoryController::class, 'storeComment'])->name('stories.comments.store');

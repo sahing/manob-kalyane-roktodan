@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('blood_requests', function (Blueprint $table) {
-            $table->date('needed_by_date')->nullable()->after('units_required');
+            $table->text('fulfillment_notes')->nullable()->after('notes');
+            $table->string('fulfilled_by_donor')->nullable()->after('fulfillment_notes');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('blood_requests', function (Blueprint $table) {
-            $table->dropColumn('needed_by_date');
+            $table->dropColumn(['fulfillment_notes', 'fulfilled_by_donor']);
         });
     }
 };

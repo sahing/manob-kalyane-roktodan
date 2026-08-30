@@ -8,3 +8,4 @@ storage/app
 shongidra-rokkho-dan
 composer.phar
 database/database.sqlite
+*.zip

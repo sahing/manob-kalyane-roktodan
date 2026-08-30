@@ -35,8 +35,8 @@
 
     @php
         $authUser = Auth::user();
-        $defaultTab = 'inquiries';
-        if (!$authUser->hasPermission('manage_requests')) {
+        $defaultTab = request('tab', (request()->hasAny(['search_user', 'users_page', 'per_page']) ? 'users' : 'inquiries'));
+        if (!request()->has('tab') && !request()->hasAny(['search_user', 'users_page', 'per_page']) && !$authUser->hasPermission('manage_requests')) {
             if ($authUser->hasPermission('manage_finances')) {
                 $defaultTab = 'pledges';
             } elseif ($authUser->hasPermission('manage_users')) {
@@ -396,6 +396,49 @@
         </div>
 
         <div class="glass-card rounded-3xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800">
+            <!-- Search & Filter Control Header -->
+            <div class="p-4 sm:p-6 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h4 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>👥 Registered Donors & Users Directory</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                            {{ number_format($users->total()) }} Registered
+                        </span>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Filter by typing Name, Phone, Email address, Blood Group, or Block location.</p>
+                </div>
+
+                <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="tab" value="users">
+                    
+                    <div class="relative min-w-[240px] flex-1">
+                        <input type="text" name="search_user" value="{{ request('search_user') }}" placeholder="🔎 Type Name, Phone, Email..." class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                        @if(request('search_user'))
+                            <a href="{{ route('admin.dashboard', ['tab' => 'users', 'per_page' => request('per_page', 10)]) }}" class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-rose-500 font-bold" title="Clear Search">✖</a>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Rows:</label>
+                        <select name="per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none">
+                            @foreach([5, 10, 15, 25, 50, 100] as $n)
+                                <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>{{ $n }} / page</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-rose-600 hover:bg-rose-500 text-white transition shadow flex items-center gap-1">
+                        <span>🔍 Search</span>
+                    </button>
+
+                    @if(request('search_user'))
+                        <a href="{{ route('admin.dashboard', ['tab' => 'users']) }}" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                            Reset
+                        </a>
+                    @endif
+                </form>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 uppercase font-bold">
@@ -409,7 +452,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                        @foreach($users as $u)
+                        @forelse($users as $u)
                             @php
                                 $profile = $u->donorProfile;
                                 $isEligible = $profile?->is_eligible ?? true;
@@ -485,9 +528,33 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                                    <div class="text-3xl mb-2">🔍</div>
+                                    <div class="font-extrabold text-slate-700 dark:text-slate-300 text-sm">No registered users matched your search criteria</div>
+                                    <p class="text-xs text-slate-400 mt-1">Try searching by a different name, phone number, email address, or clear the search filter.</p>
+                                    @if(request('search_user'))
+                                        <a href="{{ route('admin.dashboard', ['tab' => 'users']) }}" class="inline-block mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 transition shadow">
+                                            Clear Search Filter
+                                        </a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Table Pagination Controls Footer -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Showing <span class="font-extrabold text-slate-900 dark:text-white">{{ $users->firstItem() ?? 0 }}</span> to <span class="font-extrabold text-slate-900 dark:text-white">{{ $users->lastItem() ?? 0 }}</span> of <span class="font-extrabold text-slate-900 dark:text-white">{{ number_format($users->total()) }}</span> registered users
+                </div>
+
+                <div class="flex items-center gap-2">
+                    {{ $users->links() }}
+                </div>
             </div>
         </div>
     </div>
@@ -687,11 +754,11 @@
                                         </a>
 
                                         <!-- Direct Portal Communication & Chat History -->
-                                        <button type="button" onclick="openPortalChat({{ json_encode([
-                                            'name' => $inq->name,
-                                            'phone' => $inq->phone,
-                                            'notes' => $inq->purpose
-                                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1 shadow">
+                                        <button type="button" onclick="window.openPortalChat(this)"
+                                            data-name="{{ $inq->name }}"
+                                            data-phone="{{ $inq->phone }}"
+                                            data-notes="{{ $inq->purpose }}"
+                                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1 shadow">
                                             💬 Portal Chat
                                         </button>
                                     </div>
@@ -974,7 +1041,7 @@
     </div>
 
     <!-- TAB 9: Roles & Permissions Control (RBAC) -->
-    <div x-show="tab === 'roles'" x-cloak class="space-y-8" x-data="{ editingRole: { id: null, name: '', label: '', description: '', permissions: [] } }">
+    <div x-show="tab === 'roles'" x-cloak class="space-y-8" x-data="{ editingRole: { id: null, name: '', label: '', description: '', show_in_member_page: false, permissions: [] } }">
         
         <!-- Create / Edit Role Form Card -->
         <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-xl border border-amber-500/30">
@@ -985,7 +1052,7 @@
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">Create custom roles or update granular permissions for delegating administrative control.</p>
                 </div>
-                <button x-show="editingRole.id" @click="editingRole = { id: null, name: '', label: '', description: '', permissions: [] }" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">
+                <button x-show="editingRole.id" @click="editingRole = { id: null, name: '', label: '', description: '', show_in_member_page: false, permissions: [] }" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">
                     + Create New Role
                 </button>
             </div>
@@ -1008,6 +1075,17 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">Description</label>
                     <input type="text" name="description" x-model="editingRole.description" placeholder="Brief summary of duties and privileges assigned to this role..." class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <!-- Committee Visibility Toggle Checkbox -->
+                <div class="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="show_in_member_page" value="1" x-model="editingRole.show_in_member_page" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-4 h-4">
+                        <div>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-white block">👥 Display Users With This Role On Committee Members Page (/members)</span>
+                            <span class="text-[11px] text-slate-500 block">When checked, any user assigned this role will automatically appear on the public committee page.</span>
+                        </div>
+                    </label>
                 </div>
 
                 <!-- Checkboxes Grid for Permissions -->
@@ -1051,6 +1129,7 @@
                             <th class="p-3.5">Role Title & Slug</th>
                             <th class="p-3.5">Role Description</th>
                             <th class="p-3.5">Assigned Users</th>
+                            <th class="p-3.5">Committee Visibility</th>
                             <th class="p-3.5">Granted Permissions Badges</th>
                             <th class="p-3.5 text-right">Actions</th>
                         </tr>
@@ -1076,6 +1155,18 @@
                                     </span>
                                 </td>
                                 <td class="p-3.5">
+                                    @if($roleItem->show_in_member_page)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-max">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Shown on /members
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 w-max block">
+                                            Hidden from /members
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="p-3.5">
                                     <div class="flex flex-wrap gap-1">
                                         @if($roleItem->name === 'admin')
                                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
@@ -1094,14 +1185,15 @@
                                 </td>
                                 <td class="p-3.5 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <button type="button" @click="openEditRoleModal({{ json_encode([
+                                        <button type="button" @click="editingRole = {{ json_encode([
                                             'id' => $roleItem->id,
                                             'name' => $roleItem->name,
                                             'label' => $roleItem->label,
                                             'description' => $roleItem->description,
+                                            'show_in_member_page' => (bool)$roleItem->show_in_member_page,
                                             'permissions' => $roleItem->permissions ?? []
-                                        ]) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 font-bold text-xs transition">
-                                            ✏️ Edit Permissions
+                                        ]) }}" class="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 font-bold text-xs transition">
+                                            ✏️ Edit Role & Visibility
                                         </button>
 
                                         @if(!$roleItem->is_system && !in_array($roleItem->name, ['admin', 'donor']))

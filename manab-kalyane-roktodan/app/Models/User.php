@@ -60,44 +60,78 @@ class User extends Authenticatable
 
     public function getRoleObject()
     {
+        Role::ensureDefaultRolesExist();
+
+        $currentRoleName = strtolower(trim($this->role ?? ''));
+
+        // 1. Check loaded relation first if matching
         if ($this->role_id && $this->relationLoaded('roleModel') && $this->roleModel) {
-            if ($this->roleModel->name === $this->role) {
+            if (!$currentRoleName || strtolower($this->roleModel->name) === $currentRoleName) {
                 return $this->roleModel;
             }
         }
-        Role::ensureDefaultRolesExist();
-        $r = Role::where('name', $this->role)->first();
-        if (!$r && $this->role_id) {
-            $r = Role::find($this->role_id);
+
+        // 2. Lookup by role name string
+        if ($currentRoleName) {
+            $r = Role::where('name', $currentRoleName)->first();
+            if ($r) {
+                return $r;
+            }
         }
-        return $r;
+
+        // 3. Fallback: Lookup by role_id
+        if ($this->role_id) {
+            $r = Role::find($this->role_id);
+            if ($r) {
+                return $r;
+            }
+        }
+
+        // 4. Default fallback to 'donor' role
+        return Role::where('name', 'donor')->first();
     }
 
     public function hasRole(string $roleName): bool
     {
-        if ($this->role === $roleName) {
+        $currentRole = strtolower(trim($this->role ?? ''));
+        $targetRole = strtolower(trim($roleName));
+        if ($currentRole === $targetRole) {
             return true;
         }
         $r = $this->getRoleObject();
-        return $r && $r->name === $roleName;
+        return $r && strtolower($r->name) === $targetRole;
     }
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->role === 'admin') {
+        $currentRole = strtolower(trim($this->role ?? ''));
+        if ($currentRole === 'admin') {
             return true;
         }
         $r = $this->getRoleObject();
-        return $r ? $r->hasPermission($permission) : false;
+        if (!$r) {
+            return false;
+        }
+        if (strtolower($r->name) === 'admin') {
+            return true;
+        }
+        return $r->hasPermission($permission);
     }
 
     public function canAccessAdmin(): bool
     {
-        if ($this->role === 'admin') {
+        $currentRole = strtolower(trim($this->role ?? ''));
+        if ($currentRole === 'admin') {
             return true;
         }
         $r = $this->getRoleObject();
-        if (!$r || empty($r->permissions)) {
+        if (!$r) {
+            return false;
+        }
+        if (strtolower($r->name) === 'admin') {
+            return true;
+        }
+        if (empty($r->permissions)) {
             return false;
         }
         return count(array_intersect($r->permissions, array_keys(Role::defaultPermissions()))) > 0;
@@ -105,12 +139,20 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin' || $this->hasPermission('manage_users');
+        return strtolower(trim($this->role ?? '')) === 'admin' || $this->hasPermission('manage_users');
     }
 
     public function isMember(): bool
     {
-        return in_array($this->role, ['admin', 'member']) || $this->canAccessAdmin();
+        return in_array(strtolower(trim($this->role ?? '')), ['admin', 'member']) || $this->canAccessAdmin();
+    }
+
+    public function canManageBloodRequest(BloodRequest $bloodRequest): bool
+    {
+        if ($this->isAdmin() || $this->isMember() || $this->canAccessAdmin()) {
+            return true;
+        }
+        return (int)$this->id === (int)$bloodRequest->created_by;
     }
 
     public function getLoyaltyRankAttribute(): string
@@ -128,9 +170,86 @@ class User extends Authenticatable
         return '🩸 Member Donor';
     }
 
+    /**
+     * Automatically upgrade user role upon financial pledge or blood donation.
+     */
+    public function upgradeRoleAfterContribution(string $type = 'donation')
+    {
+        $currentRole = strtolower(trim($this->role ?? 'user'));
+
+        if (in_array($currentRole, ['user', 'visitor', 'guest', ''])) {
+            $donorRole = Role::where('name', 'donor')->first();
+            
+            $this->update([
+                'role' => 'donor',
+                'role_id' => $donorRole?->id,
+            ]);
+
+            UserNotification::create([
+                'user_id' => $this->id,
+                'title' => '🎉 Account Upgraded to Verified Donor!',
+                'message' => "Thank you for your {$type}! Your account has been upgraded to Verified Voluntary Donor. You have unlocked VIP donor badges and search priority.",
+                'type' => 'system',
+                'action_url' => route('dashboard'),
+            ]);
+        }
+    }
+
     public static function generateReferralCode($id)
     {
         return 'MKRD-REF-' . str_pad($id, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Sync committee member status when user role changes.
+     */
+    public function syncCommitteeMemberStatus()
+    {
+        $roleName = strtolower(trim($this->role ?? 'user'));
+        $roleObj = $this->getRoleObject();
+        $label = $roleObj?->label ?? ucfirst(str_replace('_', ' ', $roleName));
+
+        // Roles configured to appear on /members page
+        $committeeRoles = Role::where('show_in_member_page', true)->pluck('name')->toArray();
+
+        $existingMember = Member::where('phone', $this->phone)
+            ->orWhere('name', $this->name)
+            ->first();
+
+        if (in_array($roleName, $committeeRoles)) {
+            $roleTitle = match($roleName) {
+                'core_member' => 'Executive Core Member',
+                'member' => 'Committee Member',
+                'admin' => 'Administrator & Governing Lead',
+                'finance_manager' => 'Finance & Pledge Coordinator',
+                'blood_coordinator' => 'Emergency Blood Coordinator',
+                'moderator' => 'Operations Moderator',
+                default => $label
+            };
+
+            if ($existingMember) {
+                $existingMember->update([
+                    'name' => $this->name,
+                    'role_title' => $roleTitle,
+                    'phone' => $this->phone,
+                    'is_active' => true,
+                ]);
+            } else {
+                Member::create([
+                    'name' => $this->name,
+                    'role_title' => $roleTitle,
+                    'phone' => $this->phone,
+                    'sort_order' => Member::count() + 1,
+                    'is_active' => true,
+                ]);
+            }
+        } else {
+            if ($existingMember) {
+                $existingMember->update([
+                    'is_active' => false,
+                ]);
+            }
+        }
     }
 
     public static function boot()
@@ -140,21 +259,39 @@ class User extends Authenticatable
         static::saving(function ($user) {
             Role::ensureDefaultRolesExist();
 
-            if ($user->isDirty('role') || !$user->role_id) {
+            if ($user->role) {
+                $user->role = strtolower(trim($user->role));
+            }
+
+            if ($user->isDirty('role') && !$user->isDirty('role_id')) {
                 $roleObj = Role::where('name', $user->role)->first();
                 if ($roleObj) {
                     $user->role_id = $roleObj->id;
                 }
-            } elseif ($user->isDirty('role_id')) {
+            } elseif ($user->isDirty('role_id') && !$user->isDirty('role')) {
                 $roleObj = Role::find($user->role_id);
                 if ($roleObj) {
                     $user->role = $roleObj->name;
+                }
+            } elseif ($user->role_id) {
+                $roleObj = Role::find($user->role_id);
+                if ($roleObj && strtolower($roleObj->name) !== strtolower($user->role)) {
+                    $matchingRole = Role::where('name', $user->role)->first();
+                    if ($matchingRole) {
+                        $user->role_id = $matchingRole->id;
+                    } else {
+                        $user->role = $roleObj->name;
+                    }
                 }
             }
         });
 
         static::saved(function ($user) {
             $user->unsetRelation('roleModel');
+            $user->syncCommitteeMemberStatus();
+            if (\Illuminate\Support\Facades\Auth::check() && \Illuminate\Support\Facades\Auth::id() === $user->id) {
+                \Illuminate\Support\Facades\Auth::setUser($user->fresh(['roleModel']));
+            }
         });
 
         static::created(function ($user) {
